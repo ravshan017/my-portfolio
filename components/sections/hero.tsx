@@ -98,7 +98,7 @@ export function Hero() {
       />
       <div
         aria-hidden="true"
-        className="hero-left-fade pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 bg-gradient-to-r from-[#0b0e1a]/70 to-transparent md:block"
+        className="hero-left-fade pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 md:block"
       />
 
       {/* Искры от кликов */}

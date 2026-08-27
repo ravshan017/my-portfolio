@@ -40,7 +40,7 @@ export function About() {
             {/* Градиент для читабельности подписи */}
             <div
               aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0b0e1a]/85 to-transparent"
+              className="about-bottom-fade absolute inset-x-0 bottom-0 h-20"
             />
             <figcaption className="absolute inset-x-0 bottom-0 px-3 py-2 font-mono text-[10px] tracking-[0.2em] text-mist/90 uppercase">
               {t("about.photoCaption")}

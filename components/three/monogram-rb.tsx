@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { pointer } from "@/lib/pointer";
@@ -78,8 +78,10 @@ function sampleGlyphTargets(): { targets: Float32Array; count: number } {
   return { targets, count };
 }
 
-/** Текстура «твёрдой» фазы — светящийся перламутровый глиф. */
-function buildGlyphTexture(): THREE.CanvasTexture {
+/** Текстура «твёрдой» фазы.
+ *  Тёмная тема — светлые штрихи (аддитивно светятся на тёмном фоне).
+ *  Светлая тема — тёмные штрихи (обычное смешивание, глиф виден на светлом). */
+function buildGlyphTexture(light: boolean): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = TEX_W;
   canvas.height = TEX_H;
@@ -91,32 +93,53 @@ function buildGlyphTexture(): THREE.CanvasTexture {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Синее свечение-подложка
-    ctx.shadowColor = "#4d74ff";
-    ctx.shadowBlur = 44;
-    ctx.fillStyle = "rgba(124, 151, 255, 0.16)";
-    ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
-    ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+    if (light) {
+      ctx.shadowColor = "rgba(58, 92, 240, 0.45)";
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = "rgba(22, 30, 56, 0.16)";
+      ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+      ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
 
-    // Розовый ореол
-    ctx.shadowColor = "#f0619e";
-    ctx.shadowBlur = 28;
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "rgba(255, 126, 184, 0.6)";
-    ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+      ctx.shadowColor = "rgba(214, 31, 111, 0.5)";
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(176, 24, 92, 0.9)";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
 
-    // Основной светлый контур
-    ctx.shadowColor = "#8fa8ff";
-    ctx.shadowBlur = 16;
-    ctx.lineWidth = 4.5;
-    ctx.strokeStyle = "#c7d3ff";
-    ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+      ctx.shadowColor = "rgba(58, 92, 240, 0.6)";
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = "rgba(28, 42, 96, 0.95)";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
 
-    // Белое ядро
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 1.6;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = "rgba(18, 26, 52, 1)";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+    } else {
+      ctx.shadowColor = "#4d74ff";
+      ctx.shadowBlur = 44;
+      ctx.fillStyle = "rgba(124, 151, 255, 0.16)";
+      ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+      ctx.fillText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+
+      ctx.shadowColor = "#f0619e";
+      ctx.shadowBlur = 28;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(255, 126, 184, 0.6)";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+
+      ctx.shadowColor = "#8fa8ff";
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = "#c7d3ff";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.strokeText("РБ", TEX_W / 2, TEX_H / 2 + 10);
+    }
   }
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -207,6 +230,17 @@ export function Monogram({ instant = false }: MonogramProps) {
   const glitchUntilRef = useRef(-1);
   const otakuRef = useRef(false);
   const { size } = useThree();
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () =>
+      setTheme(el.getAttribute("data-theme") === "light" ? "light" : "dark");
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(el, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => mo.disconnect();
+  }, []);
+  const blend = theme === "light" ? THREE.NormalBlending : THREE.AdditiveBlending;
 
   useEffect(() => {
     const onOtaku = (e: Event) => {
@@ -308,7 +342,7 @@ export function Monogram({ instant = false }: MonogramProps) {
     };
   }, []);
 
-  const texture = useMemo(() => buildGlyphTexture(), []);
+  const texture = useMemo(() => buildGlyphTexture(theme === "light"), [theme]);
 
   useEffect(() => {
     return () => {
@@ -452,7 +486,7 @@ export function Monogram({ instant = false }: MonogramProps) {
             transparent
             opacity={0}
             depthWrite={false}
-            blending={THREE.AdditiveBlending}
+            blending={blend}
           />
         </lineSegments>
         <group>
@@ -466,7 +500,7 @@ export function Monogram({ instant = false }: MonogramProps) {
               transparent
               opacity={0}
               depthWrite={false}
-              blending={THREE.AdditiveBlending}
+              blending={blend}
             />
           </lineSegments>
         </group>
@@ -480,7 +514,7 @@ export function Monogram({ instant = false }: MonogramProps) {
             transparent
             opacity={0}
             depthWrite={false}
-            blending={THREE.AdditiveBlending}
+            blending={blend}
           />
         </lineSegments>
       </group>
@@ -497,7 +531,7 @@ export function Monogram({ instant = false }: MonogramProps) {
           transparent
           opacity={0.95}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          blending={blend}
           sizeAttenuation
         />
       </points>
@@ -524,7 +558,7 @@ export function Monogram({ instant = false }: MonogramProps) {
           transparent
           opacity={0.8}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          blending={blend}
         />
       </lineSegments>
 
@@ -537,7 +571,7 @@ export function Monogram({ instant = false }: MonogramProps) {
           transparent
           opacity={0.95}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          blending={blend}
         />
       </lineSegments>
     </group>
