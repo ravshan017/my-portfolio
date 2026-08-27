@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURUM MOTORS — премиальный автосалон в Москве</title>
+<meta name="description" content="Бутик премиальных автомобилей: подбор под ключ, trade-in, кредит за один день и доставка по всей России. Более 4 800 автомобилей продано за 12 лет.">
+<meta property="og:title" content="AURUM MOTORS — премиальный автосалон">
+<meta property="og:description" content="Подбор премиальных автомобилей под ключ. Trade-in, кредит, доставка по РФ.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#08080b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2308080b'/%3E%3Ctext x='16' y='23' font-family='Arial' font-weight='bold' font-size='18' fill='%23d8b46a' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script src="js/data.js" defer></script>
+<script src="js/ui.js" defer></script>
+<link rel="preload" as="image" href="images/hero.jpg">
+<meta property="og:title" content="AURUM MOTORS — шоурум Mercedes-Benz в Москве">
+<meta property="og:description" content="Новые и с пробегом Mercedes-Benz: S-Class, G-Class, AMG и EQ. Тест-драйв, trade-in и кредит.">
+<meta property="og:image" content="images/hero.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="images/hero.jpg">
+</head>
+<body data-page="home">
+
+<div id="preloader" aria-hidden="true">
+  <div class="pl-inner">
+    <span class="pl-logo">AURUM<em>MOTORS</em></span>
+    <span class="pl-bar"><i></i></span>
+  </div>
+</div>
+
+<div id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="container nav-in">
+    <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="16" y2="3" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="27.5" y2="23" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="4.5" y2="23" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg>AURUM<span>MOTORS</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html" class="active">Главная</a>
+      <a href="catalog.html">Модели</a>
+      <a href="services.html">Услуги</a>
+      <a href="contacts.html">Контакты</a>
+    </nav>
+    <div class="nav-tools">
+      <a class="tool-link" href="catalog.html?fav=1" aria-label="Избранное"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 2-3.2 2-4.5A4.5 4.5 0 0 0 16.5 5c-1.8 0-3.4 1-4.5 2.6C10.9 6 9.3 5 7.5 5A4.5 4.5 0 0 0 3 9.5c0 1.3.5 3 2 4.5l7 6.5z"/></svg><span class="nav-badge" data-fav-badge>0</span></a>
+      <a class="tool-link" href="compare.html" aria-label="Сравнение"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H4v18h5zM20 3h-5v18h5z"/></svg></a>
+      <a href="tel:+74951204567" class="btn btn-ghost nav-call">+7 (495) 120-45-67</a>
+      <button class="burger" id="burger" aria-label="Меню"><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <div id="sceneWrap"><canvas id="hero-canvas"></canvas></div>
+    <div class="hero-vignette"></div>
+    <div class="container hero-content">
+          <p class="kicker">Шоурум Mercedes-Benz — Москва</p>
+      <h1>Автомобили,<br><span class="grad">которые вдохновляют</span></h1>
+      <p class="hero-sub">Официальные поставки, индивидуальный подбор под ключ и полное сопровождение сделки. Более 4 800 премиальных автомобилей найдено для клиентов за 12 лет работы.</p>
+      <div class="hero-actions">
+        <a href="catalog.html" class="btn btn-primary">Смотреть каталог</a>
+        <a href="#contacts" class="btn btn-ghost">Подобрать авто</a>
+      </div>
+      <div class="config">
+        <p class="config-label">Цвет кузова: <b id="swatchName">Гранат</b></p>
+        <div class="swatches" role="group" aria-label="Выбор цвета автомобиля">
+          <button class="swatch is-active" type="button" data-hex="#8f1626" data-name="Гранат" style="--c:#8f1626" aria-label="Гранат"></button>
+          <button class="swatch" type="button" data-hex="#17233d" data-name="Полночь" style="--c:#17233d" aria-label="Полночь"></button>
+          <button class="swatch" type="button" data-hex="#10382c" data-name="Изумруд" style="--c:#10382c" aria-label="Изумруд"></button>
+          <button class="swatch" type="button" data-hex="#d9dee4" data-name="Жемчуг" style="--c:#d9dee4" aria-label="Жемчуг"></button>
+          <button class="swatch" type="button" data-hex="#23262c" data-name="Графит" style="--c:#23262c" aria-label="Графит"></button>
+          <button class="swatch" type="button" data-hex="#b3925f" data-name="Карамель" style="--c:#b3925f" aria-label="Карамель"></button>
+        </div>
+      </div>
+    </div>
+    <div class="drag-hint" id="dragHint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M18 2l.5 4L22 5.5"/></svg>
+      <span>Вращайте автомобиль</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><strong>4 800+</strong><span>авто продано</span></div>
+      <div class="hstat"><strong>12 лет</strong><span>на рынке</span></div>
+      <div class="hstat"><strong>4.9 / 5</strong><span>рейтинг клиентов</span></div>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      <span>S-CLASS</span><span>E-CLASS</span><span>GLE</span><span>G-CLASS</span><span>EQE</span><span>EQS</span><span>AMG</span><span>MAYBACH</span>
+      <span>S-CLASS</span><span>E-CLASS</span><span>GLE</span><span>G-CLASS</span><span>EQE</span><span>EQS</span><span>AMG</span><span>MAYBACH</span>
+    </div>
+  </div>
+
+  <section class="section alt" id="featured">
+    <div class="container">
+      <div class="section-head reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
+        <div>
+          <p class="kicker">Избранное</p>
+          <h2 class="h2" style="margin-bottom:0">Автомобили недели</h2>
+        </div>
+        <a href="catalog.html" class="sec-link">Весь каталог<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+      </div>
+      <div class="catalog-grid" id="featuredGrid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head center reveal">
+        <p class="kicker" style="justify-content:center">Почему мы</p>
+        <h2 class="h2">Покупка без единого риска</h2>
+        <div class="orn"><i></i><svg viewBox="0 0 10 10"><rect x="1.7" y="1.7" width="6.6" height="6.6" transform="rotate(45 5 5)"/></svg><i></i></div>
+      </div>
+      <div class="features-grid" data-stagger>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h-2v-4l2-5a2 2 0 0 1 1.9-1.3h8.2A2 2 0 0 1 17 8l2 5v4h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M7 11h10"/></svg>
+          <h3>Индивидуальный подбор</h3>
+          <p>Найдём автомобиль под ваш запрос на рынках РФ, Европы и Кореи за 7–14 дней.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 0 1 13.7-2.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 15a8 8 0 0 1-13.7 2.3L4 15"/><path d="M4 20v-5h5"/></svg>
+          <h3>Trade-in</h3>
+          <p>Примем ваш автомобиль в зачёт по рыночной цене — оценка за 40 минут.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M7.5 15.5l9-7"/><circle cx="8.2" cy="9.3" r="1.5"/><circle cx="15.8" cy="14.7" r="1.5"/></svg>
+          <h3>Кредит за один день</h3>
+          <p>Ставки от 3,9% в 18 банках-партнёрах. Одобрение за 15 минут онлайн.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 2.8v5.4c0 4.6-3 8.2-7 9.8-4-1.6-7-5.2-7-9.8V5.8z"/><path d="M9 12l2.2 2.2L15.5 9.7"/></svg>
+          <h3>Юридическая чистота</h3>
+          <p>Проверка по 12 базам данных, гарантия отсутствия обременений.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="1.7"/><circle cx="16.5" cy="18" r="1.7"/></svg>
+          <h3>Доставка по России</h3>
+          <p>Закрытый автовоз или перегон с сопровождением в любой город страны.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/></svg>
+          <h3>Сервис и гарантия</h3>
+          <p>Техническая поддержка 12 месяцев и персональный менеджер 24/7.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section eq-band" id="eq">
+    <div class="container eq-grid">
+      <div class="reveal">
+        <p class="kicker">Mercedes-EQ</p>
+        <h2 class="h2">Электрическая<br>элегантность</h2>
+        <p class="sub">Линейка EQ объединяет тишину электропривода, запас хода до 780 км и интеллектуальный MBUX. Зарядка на 300 км — всего за 15 минут на станциях постоянного тока.</p>
+        <ul class="checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Запас хода до 780 км без подзарядки</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Быстрая зарядка 10–80% за 31 минуту</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Полный привод 4MATIC на электротяге</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Гиперэкран MBUX с дополненной реальностью</li>
+        </ul>
+        <a href="catalog.html" class="btn btn-primary" style="margin-top:10px">Смотреть электромобили</a>
+      </div>
+      <div class="eq-visual reveal" aria-hidden="true">
+        <img class="eq-img" src="images/eq.jpg" alt="Mercedes-EQ" loading="lazy" onerror="this.style.display='none'">
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="tech">
+    <div class="container">
+      <div class="section-head center reveal">
+        <p class="kicker" style="justify-content:center">Технологии</p>
+        <h2 class="h2">Интеллект в каждой поездке</h2>
+        <div class="orn"><i></i><svg viewBox="0 0 10 10"><rect x="1.7" y="1.7" width="6.6" height="6.6" transform="rotate(45 5 5)"/></svg><i></i></div>
+      </div>
+      <div class="tech-grid" data-stagger>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 9h10M7 13h6"/></svg>
+          <h3>MBUX и голос</h3>
+          <p>Голосовое управление «Hey Mercedes», навигация с дополненной реальностью и обучающийся интерфейс.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 1 9 9 9 9 0 0 1-9 9"/><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3.5"/></svg>
+          <h3>Ассистенты движения</h3>
+          <p>DISTRONIC, удержание полосы и активная помощь при маневрировании на трассе и в городе.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 18 0c0 4-3 7-7 8H10c-4-1-7-4-7-8z"/><circle cx="7.5" cy="12" r="1.6"/><circle cx="16.5" cy="12" r="1.6"/></svg>
+          <h3>Премиальный комфорт</h3>
+          <p>Активная подвеска, многоконтурные кресла с массажем и ароматизация салона ENERGIZING.</p>
+        </div>
+        <div class="feat reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+          <h3>Электрические технологии</h3>
+          <p>Батарея нового поколения, рекуперация энергии и архитектура 800-вольт для сверхбыстрой зарядки.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-band">
+    <div class="container stats-grid">
+      <div class="stat"><strong data-count="12" data-suffix="">0</strong><span>лет на рынке</span></div>
+      <div class="stat"><strong data-count="4800" data-suffix="+">0</strong><span>проданных авто</span></div>
+      <div class="stat"><strong data-count="97" data-suffix="%">0</strong><span>довольных клиентов</span></div>
+      <div class="stat"><strong data-count="24" data-suffix="">0</strong><span>месяца гарантии</span></div>
+    </div>
+  </section>
+
+  <section class="section alt" id="about">
+    <div class="container about-grid">
+      <div class="about-text reveal">
+        <p class="kicker">О компании</p>
+        <h2 class="h2">Бутик, а не салон</h2>
+        <p>AURUM MOTORS — команда практиков, которая 12 лет работает с сегментом премиальных и люксовых автомобилей. Мы специализируемся на Mercedes-Benz и помогаем подобрать конкретную модель под ритм жизни клиента.</p>
+        <p>За плечами — тысячи закрытых сделок, собственная служба диагностики и партнёрская сеть сервисов по всей стране.</p>
+        <ul class="checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Прямые контракты с дилерами Европы и Азии</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Собственная служба диагностики перед выкупом</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Предпродажная подготовка каждого автомобиля</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Страхование КАСКО и ОСАГО в день покупки</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>Персональный менеджер на всём сроке владения</li>
+        </ul>
+      </div>
+      <div class="about-visual reveal" aria-hidden="true">
+        <img class="about-photo" src="images/about.jpg" alt="Шоурум AURUM MOTORS" loading="lazy" onerror="this.style.display='none'">
+        <span class="chip-f c1">Trade-in любого авто</span>
+        <span class="chip-f c2">Одобрение за 15 минут</span>
+        <span class="chip-f c3">Доставка по всей РФ</span>
+        <span class="big-outline">AURUM</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="reviews">
+    <div class="container">
+      <div class="section-head center reveal">
+        <p class="kicker" style="justify-content:center">Отзывы</p>
+        <h2 class="h2">Клиенты говорят</h2>
+        <div class="orn"><i></i><svg viewBox="0 0 10 10"><rect x="1.7" y="1.7" width="6.6" height="6.6" transform="rotate(45 5 5)"/></svg><i></i></div>
+      </div>
+      <div class="reviews-grid" data-stagger>
+          <article class="review reveal">
+            <span class="qm">“</span>
+            <p class="quote">Искал S-Class в нужной комплектации три месяца. Ребята нашли вариант за девять дней и привезли из Германии под ключ. Автомобиль — идеально.</p>
+            <div class="review-foot"><span class="avatar"><img class="avatar-img" src="images/av1.jpg" alt="Дмитрий К." onerror="this.remove()">ДК</span><div><b>Дмитрий К.</b><span>Mercedes-Benz S 580</span></div></div>
+          </article>
+          <article class="review reveal">
+            <span class="qm">“</span>
+            <p class="quote">Оформляла GLE через trade-in. Оценку сделали за час, доплату разбили на кредит. Всё прозрачно и без навязывания допуслуг.</p>
+            <div class="review-foot"><span class="avatar"><img class="avatar-img" src="images/av2.jpg" alt="Анна С." onerror="this.remove()">АС</span><div><b>Анна С.</b><span>Mercedes-Benz GLE 450</span></div></div>
+          </article>
+          <article class="review reveal">
+            <span class="qm">“</span>
+            <p class="quote">Заказывал AMG GT под заказ. Каждый вечер получал видеоотчёт о логистике. Автомобиль пришёл точно в оговорённый срок.</p>
+            <div class="review-foot"><span class="avatar"><img class="avatar-img" src="images/av3.jpg" alt="Марат А." onerror="this.remove()">МА</span><div><b>Марат А.</b><span>Mercedes-AMG GT 63 S</span></div></div>
+          </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="contacts">
+    <div class="container contact-grid">
+      <div class="reveal">
+        <p class="kicker">Контакты</p>
+        <h2 class="h2">Обсудим ваш<br>следующий автомобиль?</h2>
+        <p class="sub">Оставьте заявку — персональный менеджер свяжется с вами в течение 15 минут в рабочее время.</p>
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.9 2.2z"/></svg></span>
+            <div><b>+7 (495) 120-45-67</b><span>Ежедневно с 9:00 до 21:00</span></div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <div><b>Москва, Кутузовский проспект, 12</b><span>Шоурум с панорамными окнами</span></div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg></span>
+            <div><b>sales@aurum-motors.ru</b><span>Ответим в течение часа</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="lead-panel reveal">
+        <form data-ajax>
+          <div class="field">
+            <label for="name">Ваше имя</label>
+            <input id="name" name="name" type="text" placeholder="Александр" required>
+          </div>
+          <div class="field">
+            <label for="phone">Телефон</label>
+            <input id="phone" name="phone" type="tel" placeholder="+7 (___) ___-__-__" required>
+          </div>
+          <div class="field">
+            <label for="message">Комментарий</label>
+            <textarea id="message" name="comment" placeholder="Какой автомобиль ищете?"></textarea>
+          </div>
+          <p class="form-note">Нажимая кнопку, вы соглашаетесь с политикой обработки персональных данных.</p>
+          <button type="submit" class="btn btn-primary btn-block">Отправить заявку</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="16" y2="3" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="27.5" y2="23" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="16" x2="4.5" y2="23" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg>AURUM<span>MOTORS</span></a>
+        <p class="footer-desc">Бутик премиальных автомобилей. Продажа, индивидуальный подбор, trade-in и доставка по всей России.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Навигация</h4>
+        <a href="catalog.html">Каталог</a>
+        <a href="services.html">Услуги</a>
+        <a href="#about">О компании</a>
+        <a href="#reviews">Отзывы</a>
+      </div>
+      <div class="footer-col">
+        <h4>Покупателям</h4>
+        <a href="services.html">Кредит и рассрочка</a>
+        <a href="services.html">Trade-in</a>
+        <a href="services.html">Подбор под ключ</a>
+        <a href="contacts.html">Контакты</a>
+      </div>
+      <div class="footer-col">
+        <h4>Рассылка новинок</h4>
+        <p class="footer-desc">Первыми узнавайте о новых поступлениях.</p>
+        <form class="news" data-ajax>
+          <input type="email" placeholder="Ваш e-mail" required>
+          <button type="submit" class="btn btn-primary btn-sm">OK</button>
+        </form>
+        <div class="socials" style="margin-top:16px">
+          <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></a>
+          <a href="#" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1L3 20l1-5.3A8.5 8.5 0 1 1 21 11.5z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/></svg></a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <span>© <span id="year"></span> AURUM MOTORS · Демо-сайт. Все права защищены.</span>
+      <a href="#">Политика конфиденциальности</a>
+    </div>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="Наверх"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
+<noscript><p style="padding:100px 20px;text-align:center">Для работы сайта включите JavaScript.</p></noscript>
+<script src="js/three-scene.js" type="module"></script>
+</body>
+</html>

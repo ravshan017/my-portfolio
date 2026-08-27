@@ -1,0 +1,3524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<!-- ====================================================================
+  ✨ LifeRPG: ИСЕКАЙ МОЕЙ ЖИЗНИ ✨
+  Трекер привычек, учёбы, работы и финансов в эстетике аниме-RPG
+  (Genshin Impact / Honkai / SAO vibes). Glassmorphism + Vanilla JS.
+
+  ЗАПУСК: откройте файл двойным кликом — работает без сервера.
+  ДАННЫЕ: автоматически сохраняются в localStorage браузера.
+
+  ЧТОБЫ НАСТРОИТЬ ИГРУ ПОД СЕБЯ, ищите секцию «CONFIG» в <script> ниже:
+    • награды и штрафы          • титулы и цитаты
+    • формулу уровня            • стартовые значения персонажа
+==================================================================== -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ LifeRPG: Исекай моей жизни</title>
+
+<!-- Мягкие округлые шрифты в аниме-стиле -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Иконки FontAwesome (мечи, книги, монеты, зелья...) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<style>
+/* ====================================================================
+   1. ПЕРЕМЕННЫЕ И ОБЩИЙ ФОН
+==================================================================== */
+:root{
+  /* --- Палитра «магической» игры: меняйте цвета здесь --- */
+  --gold:        #ffcf5c;   /* опыт и монеты            */
+  --hp-green:    #58e07f;   /* здоровье                 */
+  --mp-blue:     #5ad1ff;   /* мана / фокус             */
+  --gem-purple:  #c98bff;   /* кристаллы                */
+
+  --pastel-yellow:#ffe08a;  /* пастель зоны «Привычки»  */
+  --pastel-lilac:#c9a7ff;   /* пастель зоны «Академия»  */
+  --pastel-coral:#ff9d9d;   /* пастель зоны «Гильдия»   */
+  --pastel-mint: #9defc9;   /* пастель зоны «Кошелёк»   */
+  --pastel-pink: #ffb3d9;   /* пастель зоны «Лавка»     */
+
+  /* Стекло панелей */
+  --glass-bg:      rgba(16, 18, 38, .58);
+  --glass-border:  rgba(255,255,255,.16);
+  --glass-shadow:  0 14px 44px rgba(10, 5, 40, .45);
+
+  --text-main: #f4f2ff;
+  --text-dim:  #b9b3d9;
+
+  --font-main: 'M PLUS Rounded 1c', 'Nunito', 'Segoe UI', sans-serif;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ min-height:100%; }
+
+body{
+  font-family:var(--font-main);
+  color:var(--text-main);
+  font-size:16px; line-height:1.45;
+  background-color:#1a1440; /* запасной фон, если нет интернета */
+}
+
+/* Затемняющий градиент поверх пейзажа. Сам пейзаж — фэнтези-сцена,
+   собранная из CSS/SVG-слоёв (#bg небо, звёзды, луна, облака, парящие
+   острова, горы — см. блок «ФЭНТЕЗИ-ПЕЙЗАЖ» ниже). Палитры тем — там же. */
+body::before{
+  content:''; position:fixed; inset:0; z-index:-2; pointer-events:none;
+  background:linear-gradient(180deg, rgba(10,8,30,.18), rgba(12,8,32,.42));
+}
+/* Мягкие светящиеся «соты» магии, плавающие поверх пейзажа */
+body::after{
+  content:''; position:fixed; inset:-20%; z-index:-3; pointer-events:none;
+  background:
+    radial-gradient(420px 420px at 15% 25%, rgba(201,139,255,.14), transparent 65%),
+    radial-gradient(520px 520px at 85% 75%, rgba(90,209,255,.13), transparent 65%);
+  animation:magicDrift 14s ease-in-out infinite alternate;
+}
+@keyframes magicDrift{
+  from{ transform:translate(0,0) scale(1); }
+  to  { transform:translate(-3%,4%) scale(1.06); }
+}
+
+.hidden{ display:none !important; }
+
+::-webkit-scrollbar{ width:9px; }
+::-webkit-scrollbar-track{ background:rgba(0,0,0,.25); }
+::-webkit-scrollbar-thumb{ background:rgba(201,139,255,.45); border-radius:8px; }
+
+/* ====================================================================
+   2. КАРКАС СТРАНИЦЫ
+==================================================================== */
+.app{
+  max-width:1280px; margin:0 auto;
+  padding:22px 18px 46px;
+  display:flex; flex-direction:column; gap:22px;
+}
+
+/* Сетка 4 игровых зон (2×2, на телефоне — одна колонка) */
+.zones{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:22px;
+}
+@media (max-width:1060px){ .zones{ grid-template-columns:1fr; } }
+
+/* ====================================================================
+   3. СТЕКЛЯННЫЕ ПАНЕЛИ (Glassmorphism)
+==================================================================== */
+.glass{
+  position:relative;
+  background:var(--glass-bg);
+  border:1px solid var(--glass-border);
+  border-radius:20px;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--glass-shadow), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+/* Светящаяся рамка сверху панели — цвет задаётся через --acc */
+.glass::before{
+  content:''; position:absolute; top:0; left:24px; right:24px; height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg, transparent, var(--acc,#fff), transparent);
+  opacity:.75; pointer-events:none;
+}
+
+.panel-head{
+  display:flex; align-items:center; gap:11px;
+  margin-bottom:4px;
+}
+.panel-head i{ font-size:19px; color:var(--acc,#fff);
+  filter:drop-shadow(0 0 8px var(--acc,#fff)); }
+.panel-head h2{
+  font-size:17px; font-weight:800; letter-spacing:.04em;
+}
+.panel-sub{ color:var(--text-dim); font-size:13.5px; margin-bottom:14px; }
+
+/* ====================================================================
+   4. ПАНЕЛЬ ПЕРСОНА (Player HUD)
+==================================================================== */
+.hud{
+  --acc:var(--gold);
+  display:flex; align-items:center; flex-wrap:wrap;
+  gap:22px; padding:22px 26px;
+}
+/* Аватар: круглая рамка с двойным свечением */
+.avatar-ring{
+  width:92px; height:92px; flex:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px; cursor:pointer; border:none;
+  color:#fff;
+  background:linear-gradient(145deg,#2a2158,#171233);
+  box-shadow:0 0 0 3px var(--gold), 0 0 22px rgba(255,207,92,.55);
+  transition:transform .25s ease;
+}
+.avatar-ring:hover{ transform:scale(1.07) rotate(3deg); }
+
+.identity{ min-width:170px; }
+.char-name{
+  font-size:21px; font-weight:800; cursor:pointer; line-height:1.2;
+}
+.char-name:hover{ text-shadow:0 0 12px var(--gold); }
+.title-chip{
+  display:inline-block; margin-top:6px;
+  font-size:12px; font-weight:700; letter-spacing:.08em;
+  color:#fff; padding:4px 13px; border-radius:999px;
+  background:linear-gradient(90deg, rgba(201,139,255,.35), rgba(90,209,255,.35));
+  border:1px solid rgba(255,255,255,.25);
+}
+
+/* Большая цифра уровня */
+.level-box{ text-align:center; min-width:76px; }
+.level-label{ font-size:10.5px; letter-spacing:.32em; color:var(--text-dim); text-transform:uppercase; }
+.level-num{
+  font-size:44px; font-weight:800; line-height:1.05; color:var(--gold);
+  text-shadow:0 0 18px rgba(255,207,92,.75);
+}
+
+/* Полосы HP / MP / XP */
+.bars{ flex:1; min-width:270px; display:flex; flex-direction:column; gap:11px; }
+.bar-row{ display:flex; align-items:center; gap:10px; }
+.bar-row > i{ width:20px; text-align:center; font-size:14px; }
+.bar-row.hp   > i{ color:var(--hp-green); }
+.bar-row.mp   > i{ color:var(--mp-blue); }
+.bar-row.xp   > i{ color:var(--gold); }
+.bar-caption{
+  width:118px; font-size:11.5px; letter-spacing:.1em; font-weight:700;
+  text-transform:uppercase; color:var(--text-dim); flex:none;
+}
+.bar-track{
+  flex:1; height:15px; border-radius:999px;
+  background:rgba(255,255,255,.09);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.45);
+  overflow:hidden;
+}
+.bar-fill{
+  position:relative; height:100%; width:0%; border-radius:999px;
+  transition:width .9s cubic-bezier(.25,.9,.3,1); /* плавное заполнение */
+}
+.bar-fill::after{ /* бегущий блик по полоске */
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  background:linear-gradient(110deg, transparent 20%, rgba(255,255,255,.45) 50%, transparent 80%);
+  transform:translateX(-100%);
+  animation:shimmer 2.8s ease-in-out infinite;
+}
+@keyframes shimmer{ 55%,100%{ transform:translateX(100%); } }
+.fill-hp{ background:linear-gradient(90deg,#37b95f,var(--hp-green)); box-shadow:0 0 12px rgba(88,224,127,.7); }
+.fill-mp{ background:linear-gradient(90deg,#2f9fd6,var(--mp-blue)); box-shadow:0 0 12px rgba(90,209,255,.7); }
+.fill-xp{ background:linear-gradient(90deg,#f0a93c,var(--gold));    box-shadow:0 0 12px rgba(255,207,92,.7); }
+.bar-value{
+  width:86px; text-align:right; flex:none;
+  font-size:12px; font-weight:800; font-family:'Nunito';
+}
+.bar-fill.danger{ animation:hpPanic .8s steps(2) infinite; } /* HP < 30% */
+@keyframes hpPanic{ 50%{ opacity:.4; } }
+
+/* Ресурсы справа: монеты, кристаллы, интеллект */
+.resources{ display:flex; flex-direction:column; gap:8px; }
+.res-chip{
+  display:flex; align-items:center; gap:9px;
+  padding:7px 15px; border-radius:999px;
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--glass-border);
+  font-weight:800; font-family:'Nunito';
+  min-width:150px;
+}
+.res-chip i{ width:18px; text-align:center; }
+.res-gold i { color:var(--gold);       text-shadow:0 0 8px var(--gold); }
+.res-gem i  { color:var(--gem-purple); text-shadow:0 0 8px var(--gem-purple); }
+.res-int i  { color:var(--pastel-lilac); text-shadow:0 0 8px var(--pastel-lilac); }
+.res-gold.negative span{ color:#ff8fa3; }
+
+@media (max-width:760px){
+  .hud{ justify-content:center; text-align:center; }
+  .bars{ width:100%; }
+  .resources{ flex-direction:row; flex-wrap:wrap; justify-content:center; width:100%; }
+}
+
+/* ====================================================================
+   5. ДОСКА КВЕСТОВ: элементы задач
+==================================================================== */
+.quest-list{ display:flex; flex-direction:column; gap:9px; }
+
+.q-item{
+  display:flex; align-items:center; gap:12px;
+  padding:11px 13px; border-radius:15px; cursor:pointer; user-select:none;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.09);
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.q-item:hover{
+  transform:translateY(-2px);
+  border-color:var(--acc,#fff);
+  box-shadow:0 6px 18px rgba(0,0,0,.35), 0 0 14px color-mix(in srgb, var(--acc,#fff) 35%, transparent);
+}
+
+/* --- Анимированный круглый чекбокс --- */
+.check{
+  position:relative; width:26px; height:26px; flex:none;
+  border-radius:50%; border:2.5px solid rgba(255,255,255,.35);
+  transition:all .25s ease;
+}
+.q-item:hover .check{
+  border-color:var(--acc,#fff);
+  box-shadow:0 0 10px color-mix(in srgb, var(--acc,#fff) 60%, transparent);
+}
+.q-item.done .check{
+  background:var(--acc,#fff); border-color:transparent;
+  box-shadow:0 0 14px color-mix(in srgb, var(--acc,#fff) 80%, transparent);
+}
+.q-item.done .check::after{           /* галочка «прорисовывается» */
+  content:''; position:absolute; left:8px; top:4px;
+  width:6px; height:12px;
+  border:solid #fff; border-width:0 3px 3px 0;
+  transform:rotate(43deg) scale(1);
+  animation:checkPop .3s cubic-bezier(.3,1.6,.5,1);
+}
+@keyframes checkPop{ from{ transform:rotate(43deg) scale(0); } to{ transform:rotate(43deg) scale(1); } }
+.q-item.done .check::before{          /* расходящееся кольцо */
+  content:''; position:absolute; inset:-3px; border-radius:50%;
+  border:2px solid var(--acc,#fff);
+  animation:ringPing .55s ease-out forwards;
+}
+@keyframes ringPing{
+  from{ transform:scale(.7); opacity:.9; }
+  to  { transform:scale(1.9); opacity:0; }
+}
+
+.q-body{ flex:1; min-width:0; }
+.q-title{ font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.q-meta{ font-size:12px; color:var(--text-dim); display:flex; gap:9px; flex-wrap:wrap; }
+.flame{ color:var(--pastel-coral); font-weight:700; }
+
+.q-reward{
+  flex:none; font-size:12px; font-weight:800; font-family:'Nunito';
+  color:var(--gold); white-space:nowrap;
+  text-shadow:0 0 8px rgba(255,207,92,.4);
+}
+.q-reward .m{ color:var(--mp-blue); text-shadow:0 0 8px rgba(90,209,255,.4); }
+.q-reward .g{ color:var(--hp-green); }
+
+.q-item.done{ opacity:.55; }
+.q-item.done .q-title{ text-decoration:line-through; }
+
+.del-btn{
+  flex:none; background:none; cursor:pointer;
+  border:none; color:var(--text-dim); font-size:14px;
+  width:28px; height:28px; border-radius:9px;
+  transition:all .2s;
+}
+.del-btn:hover{ color:#ff8fa3; background:rgba(255,143,163,.12); box-shadow:0 0 10px rgba(255,143,163,.3); }
+
+.empty-note{
+  text-align:center; color:var(--text-dim); font-style:italic;
+  padding:16px; font-size:14px;
+}
+
+/* --- Значок ранга гильдии (D/C/B/A/S) --- */
+.rank-badge{
+  flex:none; width:34px; height:34px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:15px; font-family:'Nunito';
+  border:1px solid; text-shadow:0 0 8px currentColor;
+}
+.rank-D{ color:#cfcfe8; border-color:#cfcfe8; background:rgba(207,207,232,.08); }
+.rank-C{ color:#7fe3a1; border-color:#7fe3a1; background:rgba(127,227,161,.08); }
+.rank-B{ color:#6db9ff; border-color:#6db9ff; background:rgba(109,185,255,.08); }
+.rank-A{ color:#c98bff; border-color:#c98bff; background:rgba(201,139,255,.10); }
+.rank-S{ color:var(--gold); border-color:var(--gold); background:rgba(255,207,92,.10);
+         animation:sRankGlow 1.6s ease-in-out infinite alternate; }
+@keyframes sRankGlow{ from{ box-shadow:0 0 4px rgba(255,207,92,.3);} to{ box-shadow:0 0 16px rgba(255,207,92,.8);} }
+
+/* Метки дедлайна и сложности */
+.dl-soon{ color:var(--gold); font-weight:700; }
+.dl-over{ color:#ff8fa3; font-weight:800; }
+.diff-chip{ font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; border:1px solid; }
+.diff-easy{ color:#9defc9; border-color:#9defc9; }
+.diff-mid { color:#ffe08a; border-color:#ffe08a; }
+.diff-hard{ color:#ff9d9d; border-color:#ff9d9d; }
+
+/* ====================================================================
+   6. КОШЕЛЁК
+==================================================================== */
+.wallet-summary{
+  display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;
+  font-size:13.5px; color:var(--text-dim);
+}
+.wallet-summary b{ font-family:'Nunito'; font-size:14.5px; }
+.sum-in  b{ color:var(--hp-green); }
+.sum-out b{ color:#ff8fa3; }
+.sum-all b{ color:var(--gold); }
+
+.fin-type{
+  flex:none; font-size:11px; font-weight:800; letter-spacing:.06em;
+  padding:3px 10px; border-radius:999px; border:1px solid;
+}
+.ft-in { color:#9defc9; border-color:#9defc9; }
+.ft-out{ color:#ff9d9d; border-color:#ff9d9d; }
+.amt-in { color:var(--hp-green); font-weight:800; }
+.amt-out{ color:#ff8fa3; font-weight:800; }
+
+/* ====================================================================
+   7. ЛАВКА ТОРГОВЦА
+==================================================================== */
+.shop-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px;
+}
+.shop-card{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  gap:8px; padding:18px 14px; border-radius:16px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.1);
+  transition:transform .22s ease, box-shadow .22s ease;
+  position:relative;
+}
+.shop-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 10px 26px rgba(0,0,0,.4), 0 0 18px rgba(255,179,217,.35);
+  border-color:var(--pastel-pink);
+}
+.shop-icon{ font-size:36px; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+.shop-name{ font-weight:700; font-size:14.5px; line-height:1.3; }
+.shop-price{
+  font-family:'Nunito'; font-weight:800; font-size:13.5px; color:var(--gold);
+  text-shadow:0 0 8px rgba(255,207,92,.4);
+}
+.shop-del{ position:absolute; top:7px; right:7px; }
+.btn-buy{ width:100%; margin-top:4px; }
+.btn-buy:disabled{
+  opacity:.42; cursor:not-allowed; transform:none !important; box-shadow:none !important;
+}
+
+/* ====================================================================
+   8. КНОПКИ И ФОРМЫ
+==================================================================== */
+.btn{
+  font-family:'Nunito'; font-weight:800; font-size:13.5px;
+  color:#fff; cursor:pointer;
+  padding:10px 20px; border-radius:999px; border:1px solid rgba(255,255,255,.25);
+  background:linear-gradient(135deg, color-mix(in srgb, var(--acc,#c98bff) 55%, transparent), color-mix(in srgb, var(--acc,#c98bff) 25%, transparent));
+  transition:all .22s ease;
+  display:inline-flex; align-items:center; gap:8px; justify-content:center;
+}
+.btn:hover:not(:disabled){
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 8px 20px rgba(0,0,0,.35), 0 0 18px color-mix(in srgb, var(--acc,#c98bff) 60%, transparent);
+}
+.btn:active{ transform:translateY(1px) scale(.99); }
+.btn-ghost{
+  background:rgba(255,255,255,.08);
+}
+.btn-buy{ --acc:var(--pastel-pink); }
+
+.form-panel{
+  display:flex; flex-wrap:wrap; gap:8px;
+  margin-top:14px; padding-top:14px;
+  border-top:1px dashed rgba(255,255,255,.18);
+  animation:formOpen .3s ease;
+}
+@keyframes formOpen{ from{ opacity:0; transform:translateY(-6px);} to{ opacity:1; transform:none; } }
+
+input[type=text], input[type=number], input[type=date], select{
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:12px; color:var(--text-main);
+  font-family:var(--font-main); font-size:14px; font-weight:500;
+  padding:9px 12px; outline:none; min-width:0;
+  transition:border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus{
+  border-color:var(--acc,#c98bff);
+  box-shadow:0 0 12px color-mix(in srgb, var(--acc,#c98bff) 45%, transparent);
+}
+input::placeholder{ color:#8d87b3; }
+select option{ background:#221a4a; color:#fff; }
+input[type=date]{ color-scheme:dark; }
+
+/* ====================================================================
+   9. TOASTS — игровые уведомления
+==================================================================== */
+#toast-container{
+  position:fixed; top:18px; right:18px; z-index:1300;
+  display:flex; flex-direction:column; gap:10px; max-width:min(350px, calc(100vw - 36px));
+}
+.toast{
+  display:flex; align-items:flex-start; gap:11px;
+  background:rgba(22,20,48,.92);
+  backdrop-filter:blur(12px);
+  border:1px solid var(--glass-border);
+  border-left:4px solid var(--tc,#5ad1ff);
+  border-radius:14px; padding:12px 16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  animation:toastIn .45s cubic-bezier(.2,1.5,.4,1) both;
+}
+.toast i{ color:var(--tc,#5ad1ff); font-size:16px; margin-top:2px;
+  filter:drop-shadow(0 0 6px var(--tc,#5ad1ff)); }
+.toast-title{ font-size:11px; font-weight:800; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text-dim); }
+.toast-msg{ font-size:14.5px; font-weight:700; }
+.toast-out{ animation:toastOut .35s ease both; }
+@keyframes toastIn{ from{ transform:translateX(120%) scale(.9); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes toastOut{ to{ transform:translateX(120%); opacity:0; } }
+
+/* ====================================================================
+   10. МОДАЛКИ: LEVEL UP и GAME OVER
+==================================================================== */
+.overlay{
+  position:fixed; inset:0; z-index:1400;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  background:rgba(8,6,24,.72);
+  backdrop-filter:blur(9px);
+}
+.modal-card{
+  position:relative; overflow:hidden; text-align:center;
+  max-width:600px; width:100%;
+  background:linear-gradient(160deg, rgba(40,28,86,.96), rgba(20,14,48,.97));
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:26px;
+  box-shadow:0 0 80px rgba(160,110,255,.4);
+  padding:54px 40px 44px;
+  animation:modalZoom .55s cubic-bezier(.2,1.5,.35,1) both;
+}
+@keyframes modalZoom{ from{ transform:scale(.55); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+/* Вращающиеся магические лучи за текстом */
+.rays{
+  position:absolute; top:50%; left:50%; width:640px; height:640px;
+  translate:-50% -50%;
+  background:conic-gradient(from 0deg,
+    transparent 0 14deg,   rgba(255,207,92,.14)  14deg 22deg,
+    transparent 22deg 40deg, rgba(201,139,255,.13) 40deg 47deg,
+    transparent 47deg 66deg, rgba(90,209,255,.11)  66deg 73deg,
+    transparent 73deg 360deg);
+  animation:raysSpin 11s linear infinite;
+  pointer-events:none;
+}
+@keyframes raysSpin{ to{ rotate:360deg; } }
+
+.lu-caption{ font-size:11.5px; letter-spacing:.5em; text-transform:uppercase; color:var(--text-dim); }
+.lu-title{
+  font-size:clamp(46px, 9vw, 74px); font-weight:800; line-height:1.05;
+  letter-spacing:.04em;
+  background:linear-gradient(180deg,#fff7dd 15%, var(--gold) 45%, #ff9de2 90%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 22px rgba(255,207,92,.75));
+  animation:titleBreath 1.4s ease-in-out infinite alternate;
+}
+@keyframes titleBreath{
+  from{ filter:drop-shadow(0 0 14px rgba(255,207,92,.6)); }
+  to  { filter:drop-shadow(0 0 34px rgba(255,157,226,.95)); }
+}
+.lu-level{ font-size:21px; font-weight:800; color:var(--mp-blue);
+  text-shadow:0 0 12px rgba(90,209,255,.6); margin-top:6px; }
+.lu-restored{ font-size:13.5px; color:var(--hp-green); margin-top:6px; font-weight:700; }
+.lu-newtitle{
+  display:inline-block; margin-top:14px; padding:6px 18px; border-radius:999px;
+  font-weight:800; font-size:13.5px; letter-spacing:.06em;
+  color:#fff; border:1px solid var(--gem-purple);
+  background:rgba(201,139,255,.16);
+  box-shadow:0 0 16px rgba(201,139,255,.4);
+}
+.lu-quote{
+  margin:22px auto 26px; max-width:430px;
+  font-style:italic; color:var(--text-dim); font-size:15px;
+}
+
+/* Конфетти для LEVEL UP (генерируется из JS) */
+.confetti{ position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:inherit; }
+.confetti span{
+  position:absolute; top:-4vh; width:9px; height:14px; border-radius:3px;
+  animation:confFall var(--dur,2.6s) linear var(--delay,0s) forwards;
+  opacity:0;
+}
+@keyframes confFall{
+  0%  { transform:translateY(0) rotateZ(0deg) rotateY(0deg); opacity:1; }
+  100%{ transform:translateY(112vh) rotateZ(720deg) rotateY(540deg); opacity:.6; }
+}
+
+/* Экран Game Over */
+.wasted-modal{
+  border-color:rgba(255,80,110,.55);
+  box-shadow:0 0 90px rgba(255,50,90,.4);
+  background:linear-gradient(160deg, rgba(84,16,36,.96), rgba(30,8,20,.97));
+  animation:modalShake .5s ease both;
+}
+@keyframes modalShake{
+  0%,100%{ transform:translateX(0); }
+  20%{ transform:translateX(-12px); } 40%{ transform:translateX(10px); }
+  60%{ transform:translateX(-7px); }  80%{ transform:translateX(5px); }
+}
+.wasted-title{
+  font-size:clamp(44px,9vw,72px); font-weight:800; letter-spacing:.12em;
+  color:#ff5d7d; text-shadow:0 0 30px rgba(255,60,100,.9);
+  animation:titleBreath 1.2s ease-in-out infinite alternate;
+}
+.wasted-sub{ font-size:16px; font-weight:700; color:#ffc9d4; margin-top:4px; }
+.wasted-loss{ margin:20px auto 24px; color:var(--text-dim); font-size:15px; line-height:1.8; }
+.wasted-loss b{ color:#ff8fa3; font-family:'Nunito'; }
+
+/* ====================================================================
+   10.5 · ДОПОЛНЕНИЯ V2: боссы, навыки, питомец, помодоро, темы и др.
+==================================================================== */
+
+/* ====================================================================
+   ✨ ФЭНТЕЗИ-ПЕЙЗАЖ: небо, звёзды, луна, облака, парящие острова, горы.
+   Всё рисуется чистым CSS + inline-SVG — работает даже без интернета.
+   Слои двигаются мышью (параллакс) с разной глубиной (.px data-depth).
+==================================================================== */
+/* Базовый слой — небо темы. Палитры трёх тем заданы ниже на body */
+#bg{
+  position:fixed; inset:-4%; z-index:-6;
+  background:var(--sky);
+  transition:transform .35s ease-out;
+  will-change:transform;
+}
+/* Тёплое свечение у горизонта */
+#bg::after{
+  content:''; position:absolute; left:0; right:0; bottom:0; height:55%;
+  background:radial-gradient(120% 90% at 50% 100%, var(--horizon-glow), transparent 70%);
+}
+
+/* --- Палитры тем ----------------------------------------------------- */
+body{
+  /* 🌙 Ночь (по умолчанию): магическое фиолетовое небо */
+  --sky: linear-gradient(180deg,#070b26 0%, #171243 38%, #3b2270 68%, #7a3fae 100%);
+  --horizon-glow: rgba(255,120,220,.30);
+  --mtn-far:#3a2a6e; --mtn-near:#191233;
+  --star-op:.95;
+  --cloud-tint:rgba(210,190,255,.20);
+}
+body[data-theme="sunset"]{
+  /* 🌇 Закат: янтарно-розовое небо над тёплыми хребтами */
+  --sky: linear-gradient(180deg,#2b1a54 0%, #7a3f7e 34%, #d96a6a 62%, #ffab66 84%, #ffd98f 100%);
+  --horizon-glow: rgba(255,190,110,.45);
+  --mtn-far:#7a4472; --mtn-near:#3a2148;
+  --star-op:.16;
+  --cloud-tint:rgba(255,220,180,.28);
+}
+body[data-theme="sakura"]{
+  /* 🌸 Сакура: нежный розовый рассвет */
+  --sky: linear-gradient(180deg,#3d3a7c 0%, #8a6ec0 36%, #d99ad0 64%, #ffbcd8 86%, #ffe3ef 100%);
+  --horizon-glow: rgba(255,200,225,.5);
+  --mtn-far:#a878b8; --mtn-near:#5d3a72;
+  --star-op:.5;
+  --cloud-tint:rgba(255,235,245,.32);
+}
+
+/* Общий класс фоновых слоёв */
+.fx{ position:fixed; inset:0; pointer-events:none; }
+
+/* Звёзды: мозаика из радиальных градиентов + мягкое мерцание */
+#fx-stars{
+  inset:0 0 25% 0; z-index:-5;
+  opacity:var(--star-op);
+  background-image:
+    radial-gradient(1.6px 1.6px at 22px 34px,  #ffffff, transparent 55%),
+    radial-gradient(1.1px 1.1px at 121px 94px, #dfeaff, transparent 55%),
+    radial-gradient(1.9px 1.9px at 203px 161px,#ffffff, transparent 55%),
+    radial-gradient(1.1px 1.1px at 64px 187px, #ffeaf7, transparent 55%),
+    radial-gradient(1.5px 1.5px at 174px 41px, #ffffff, transparent 55%),
+    radial-gradient(1.0px 1.0px at 250px 210px,#ffffff, transparent 55%);
+  background-size:280px 280px;
+  animation:twinkle 4.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle{ from{ filter:brightness(.72); } to{ filter:brightness(1.28); } }
+
+/* Светило: луна ночью · солнце на закате · жемчужная луна в сакуре */
+#fx-celestial{
+  position:fixed; width:110px; height:110px; border-radius:50%;
+  right:15%; top:13%; z-index:-5;
+  background:radial-gradient(circle at 38% 34%, #fffdf2, #ffe9b0 58%, #f2c46a);
+  box-shadow:0 0 42px rgba(255,232,170,.85),
+             0 0 130px rgba(255,200,120,.40),
+             inset -16px -12px 0 rgba(180,140,70,.16);
+}
+body[data-theme="sunset"] #fx-celestial{
+  width:170px; height:170px; top:auto; bottom:16%; right:20%;
+  background:radial-gradient(circle at 50% 42%, #fff6dd, #ffc46b 58%, #ff8a4b);
+  box-shadow:0 0 70px rgba(255,170,90,.95), 0 0 190px rgba(255,120,60,.55);
+}
+body[data-theme="sakura"] #fx-celestial{
+  background:radial-gradient(circle at 40% 34%, #ffffff, #ffd7e9 60%, #ffafd2);
+  box-shadow:0 0 55px rgba(255,195,220,.9), 0 0 150px rgba(255,150,195,.5);
+}
+
+/* Облака: длинные размытые полосы, медленно плывут через экран */
+#fx-clouds{ z-index:-5; }
+#fx-clouds i{ position:absolute; display:block; height:24px; border-radius:999px;
+  background:linear-gradient(180deg, var(--cloud-tint), transparent);
+  filter:blur(7px); }
+#fx-clouds i:nth-child(1){ width:34vw; left:-30vw; top:15vh; animation:drift 130s linear infinite; }
+#fx-clouds i:nth-child(2){ width:24vw; left:-24vw; top:33vh; animation:drift 95s linear infinite -40s; }
+#fx-clouds i:nth-child(3){ width:42vw; left:-40vw; top:54vh; animation:drift 160s linear infinite -80s; opacity:.7; }
+#fx-clouds i:nth-child(4){ width:18vw; left:-16vw; top:7vh;  animation:drift 110s linear infinite -20s; opacity:.8; }
+@keyframes drift{ to{ transform:translateX(175vw); } }
+
+/* Горы: два хребта с рваными гребнями (clip-path) */
+#fx-mtn-far,#fx-mtn-near{ inset:auto -4% -2% -4%; }
+#fx-mtn-far{ height:36vh; z-index:-4; background:var(--mtn-far); opacity:.82;
+  clip-path:polygon(0 100%,0 62%,7% 44%,13% 58%,20% 30%,27% 52%,34% 22%,41% 48%,
+                    48% 34%,55% 55%,62% 26%,69% 50%,77% 38%,84% 58%,91% 42%,100% 60%,100% 100%); }
+#fx-mtn-near{ height:22vh; z-index:-4; background:var(--mtn-near);
+  clip-path:polygon(0 100%,0 70%,9% 46%,17% 66%,26% 38%,35% 62%,45% 44%,
+                    54% 68%,63% 40%,72% 60%,81% 48%,90% 66%,100% 52%,100% 100%); }
+
+/* Парящие острова (inline-SVG в разметке ниже) медленно покачиваются */
+.island-bob{
+  animation:bob 7s ease-in-out infinite alternate;
+  transform-origin:center;
+  filter:drop-shadow(0 18px 22px rgba(0,0,0,.38));
+}
+.island-bob.slow{ animation-duration:11s; animation-delay:-4s; }
+@keyframes bob{ from{ transform:translateY(-7px) rotate(-1deg); } to{ transform:translateY(9px) rotate(1.2deg); } }
+
+/* Лепестки сакуры — только в теме sakura (генерируются из JS) */
+#fx-petals{ display:none; overflow:hidden; z-index:-1; }
+body[data-theme="sakura"] #fx-petals{ display:block; }
+.petal{
+  position:absolute; top:-6vh; width:11px; height:15px;
+  border-radius:60% 40% 65% 35%;
+  background:radial-gradient(circle at 30% 30%, #ffd3e6, #ff8fbf);
+  opacity:.85;
+  animation:petalFall var(--dur,9s) linear var(--delay,0s) infinite;
+}
+@keyframes petalFall{
+  from{ transform:translate(0,-6vh) rotateZ(0deg); }
+  50% { transform:translate(var(--sway,60px),55vh) rotateZ(360deg); }
+  to  { transform:translate(calc(var(--sway,60px) * -.4),108vh) rotateZ(720deg); }
+}
+
+/* Универсальные сетки для новых секций */
+.row{ display:grid; gap:22px; }
+.row.c2{ grid-template-columns:repeat(2,1fr); }
+.row.c3{ grid-template-columns:repeat(3,1fr); }
+@media (max-width:1060px){ .row.c2,.row.c3{ grid-template-columns:1fr; } }
+
+/* Индикатор баффа «×2 XP» (фортуна дня) */
+.buff-chip{
+  display:inline-block; margin-top:6px;
+  font-size:12px; font-weight:800; padding:4px 13px; border-radius:999px;
+  color:#1b1430;
+  background:linear-gradient(90deg,var(--gold),#ff9de2);
+  animation:buffPulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes buffPulse{
+  from{ box-shadow:0 0 6px rgba(255,207,92,.5); }
+  to  { box-shadow:0 0 18px rgba(255,157,226,.95); }
+}
+
+/* Маленькая круглая кнопка (навыки, алхимия, подзадачи) */
+.btn-mini{
+  font-family:'Nunito'; font-weight:800; font-size:12.5px; color:#fff; cursor:pointer;
+  padding:7px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.25);
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--acc,#c98bff) 55%, transparent),
+    color-mix(in srgb, var(--acc,#c98bff) 22%, transparent));
+  transition:all .2s ease; white-space:nowrap;
+}
+.btn-mini:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(0,0,0,.3), 0 0 12px color-mix(in srgb, var(--acc,#c98bff) 50%, transparent);
+}
+.btn-mini:disabled{ opacity:.38; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
+
+/* ---------- Рейд-боссы ---------- */
+.boss-card{
+  position:relative; border-radius:16px; padding:14px; margin-bottom:14px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,157,157,.28);
+}
+.boss-head{ display:flex; align-items:center; gap:12px; margin-bottom:9px; }
+.boss-icon{ font-size:30px; filter:drop-shadow(0 0 8px rgba(255,120,120,.7)); }
+.boss-hpnum{ font-family:'Nunito'; font-weight:800; font-size:13px; color:#ff9d9d; white-space:nowrap; }
+.fill-boss{ background:linear-gradient(90deg,#d63a5e,#ff9d5c); box-shadow:0 0 12px rgba(255,110,110,.7); }
+.q-item.sub{ padding:8px 11px; }
+.dmg-chip{ flex:none; font-size:11px; font-weight:800; color:var(--gold); white-space:nowrap; }
+.ribbon{
+  position:absolute; top:10px; right:46px;
+  font-family:'Nunito'; font-weight:800; letter-spacing:.14em; font-size:12px;
+  color:var(--hp-green); border:1px solid var(--hp-green);
+  padding:3px 12px; border-radius:999px; transform:rotate(-4deg);
+  text-shadow:0 0 10px rgba(88,224,127,.8);
+}
+.boss-card.defeated{ opacity:.6; border-color:rgba(88,224,127,.45); }
+.sub-add{ display:flex; gap:7px; margin-top:10px; }
+.sub-add input[type=text]{ flex:1; padding:7px 10px; font-size:13px; }
+.sub-add input[type=number]{ width:76px; padding:7px 8px; font-size:13px; }
+
+/* ---------- Древо навыков / Алхимия (общие строки) ---------- */
+.skill-row, .alch-row{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:13px; margin-bottom:9px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);
+}
+.skill-info{ flex:1; min-width:0; }
+.skill-name{ font-weight:800; font-size:14.5px; }
+.skill-desc{ font-size:12px; color:var(--text-dim); }
+.alch-icon{ font-size:24px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)); }
+.herb-line{ font-size:13.5px; margin-bottom:12px; }
+.herb-line b{ color:#9defc9; font-family:'Nunito'; }
+
+/* ---------- Питомец ---------- */
+.pet-stage{
+  font-size:64px; text-align:center; line-height:1.15;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.45));
+  transition:transform .3s ease;
+}
+.pet-stage:hover{ transform:scale(1.08) rotate(-5deg); }
+.pet-name{ text-align:center; font-weight:800; cursor:pointer; margin:6px 0 10px; }
+.pet-name:hover{ text-shadow:0 0 10px var(--pastel-pink); }
+.bar-track.thin{ height:9px; }
+.fill-pet{ background:linear-gradient(90deg,#ff9de2,#c98bff); box-shadow:0 0 10px rgba(201,139,255,.7); }
+.pet-progress{ text-align:center; font-size:12.5px; color:var(--text-dim); margin-top:8px; }
+.pet-progress b{ color:var(--pastel-pink); }
+
+/* ---------- Помодоро «Рейд фокуса» ---------- */
+.pomo-time{
+  font-family:'Nunito'; font-weight:800; font-size:46px; text-align:center;
+  color:var(--mp-blue); text-shadow:0 0 18px rgba(90,209,255,.55);
+  margin:8px 0 2px; font-variant-numeric:tabular-nums;
+}
+.pomo-status{ text-align:center; color:var(--text-dim); font-size:13px; min-height:20px; margin-bottom:12px; }
+.pomo-btns{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.pomo.running .pomo-time{ animation:titleBreath 2s ease-in-out infinite alternate; }
+
+/* ---------- Достижения ---------- */
+.ach-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.ach{
+  text-align:center; padding:14px 10px; border-radius:14px;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09);
+  opacity:.42; filter:grayscale(.85); transition:all .25s ease;
+}
+.ach.on{ opacity:1; filter:none; border-color:var(--gold); box-shadow:0 0 14px rgba(255,207,92,.25); }
+.ach i{ font-size:22px; color:var(--gold); margin-bottom:6px; display:block; }
+.ach-t{ font-weight:800; font-size:12.5px; }
+.ach-d{ font-size:11px; color:var(--text-dim); }
+.ach-r{ font-size:11px; color:var(--gem-purple); font-weight:700; }
+
+/* ---------- Пати ---------- */
+.party-cols{ display:flex; gap:14px; flex-wrap:wrap; align-items:stretch; }
+.hero-mini{
+  flex:1; min-width:180px; text-align:center;
+  padding:14px; border-radius:14px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+}
+.vs{ align-self:center; font-weight:800; color:var(--pastel-coral); font-size:19px; }
+.party-btns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+
+/* ---------- График недели ---------- */
+#week-canvas{ width:100%; height:auto; display:block; }
+
+/* ---------- CG-сцена (босс повержен, эволюция питомца) ---------- */
+.scene-modal{ max-width:480px; padding:46px 36px 38px; }
+.scene-emoji{
+  font-size:76px; line-height:1.15;
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.5));
+  animation:scenePop .6s cubic-bezier(.2,1.6,.4,1) both;
+}
+@keyframes scenePop{ from{ transform:scale(.2) rotate(-20deg); } to{ transform:scale(1) rotate(0); } }
+.scene-title{
+  font-size:26px; font-weight:800; margin-top:10px;
+  color:var(--gold); text-shadow:0 0 14px rgba(255,207,92,.6);
+}
+.scene-sub{ color:var(--text-dim); margin-top:8px; }
+
+/* ====================================================================
+   10.9 · ВЫБОР КЛАССА ПЕРСОНАЖА (мечник, лучник, танк, маг…)
+==================================================================== */
+.class-chip{
+  margin-top:8px; cursor:pointer;
+  border-color:rgba(255,207,92,.55) !important;
+  background:rgba(255,207,92,.14) !important;
+}
+.class-chip:hover{ box-shadow:0 0 14px rgba(255,207,92,.55); }
+
+.pick-title{
+  font-size:clamp(28px, 6vw, 44px); font-weight:800; letter-spacing:.06em;
+  background:linear-gradient(180deg,#fff7dd 15%, var(--gold) 45%, #ff9de2 90%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 16px rgba(255,207,92,.6));
+}
+.class-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(172px,1fr));
+  gap:12px; margin-top:22px; text-align:left;
+}
+.class-card{
+  position:relative; text-align:center; cursor:pointer;
+  padding:18px 12px 14px; border-radius:16px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
+  transition:all .22s ease;
+}
+.class-card:hover{
+  transform:translateY(-4px) scale(1.02);
+  border-color:var(--cc,#c98bff);
+  box-shadow:0 10px 26px rgba(0,0,0,.45),
+             0 0 20px color-mix(in srgb, var(--cc,#c98bff) 55%, transparent);
+}
+.class-card.sel{ border-color:var(--gold); box-shadow:0 0 16px rgba(255,207,92,.4); }
+.class-icon{ font-size:38px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+.class-name{ font-weight:800; font-size:15px; margin-top:6px; color:var(--cc,#fff); }
+.class-perks{ list-style:none; margin-top:8px; font-size:11.5px; color:var(--text-dim); }
+.class-perks li{ padding:2px 0 2px 13px; position:relative; text-align:left; }
+.class-perks li::before{ content:'▸'; position:absolute; left:2px; color:var(--cc,#c98bff); }
+.class-note{ margin-top:18px; font-size:12px; color:var(--text-dim); }
+
+/* Предварительный выбор карточки (до нажатия «Подтвердить») */
+.class-card.picked{
+  border-color:var(--gold);
+  box-shadow:0 0 18px rgba(255,207,92,.5);
+  transform:translateY(-3px);
+}
+.pick-btns{ display:flex; gap:10px; justify-content:center; margin-top:22px; flex-wrap:wrap; }
+.btn:disabled{
+  opacity:.42; cursor:not-allowed;
+  transform:none !important; box-shadow:none !important;
+}
+
+/* ====================================================================
+   11. СЛУЖЕБНАЯ ПАНЕЛЬ (для тестирования механик)
+==================================================================== */
+.dev-bar{
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  color:var(--text-dim); font-size:13px;
+}
+.dev-btn{
+  font-family:'Nunito'; font-weight:700; font-size:12.5px;
+  background:rgba(255,255,255,.06); color:var(--text-dim);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px; padding:6px 14px; cursor:pointer; transition:all .2s;
+}
+.dev-btn:hover{ color:#fff; border-color:#c9a7ff; box-shadow:0 0 12px rgba(201,167,255,.4); }
+.dev-btn.warn:hover{ color:#ff8fa3; border-color:#ff8fa3; box-shadow:0 0 12px rgba(255,143,163,.4); }
+.dev-spacer{ flex:1; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     ФЭНТЕЗИ-ПЕЙЗАЖ: слои с разной глубиной параллакса (.px data-depth).
+     Острова — inline-SVG: скала с травяной шапкой, деревом, водопадом
+     и светящимися кристаллами. Цвета неба/гор задаются темой в CSS.
+================================================================ -->
+<div id="bg" class="px" data-depth="0.15"></div>
+<div id="fx-stars" class="fx px" data-depth="0.05"></div>
+<div id="fx-celestial" class="px" data-depth="0.12"></div>
+<div id="fx-clouds" class="fx px" data-depth="0.22"><i></i><i></i><i></i><i></i></div>
+
+<!-- Большой парящий остров (слева) -->
+<div class="fx px" data-depth="0.26" style="inset:auto; left:4%; top:13%; z-index:-4;">
+  <svg class="island-bob" width="300" height="245" viewBox="0 0 260 210" aria-hidden="true">
+    <defs>
+      <linearGradient id="rockA" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#6b5aa0"/><stop offset="1" stop-color="#241a4e"/>
+      </linearGradient>
+      <linearGradient id="grassA" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7be0a3"/><stop offset="1" stop-color="#2e8f6b"/>
+      </linearGradient>
+      <linearGradient id="waterA" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#bdefff"/><stop offset="1" stop-color="#5ac8ff"/>
+      </linearGradient>
+    </defs>
+    <!-- свисающие корни -->
+    <path d="M60 92 q-6 26 6 44" stroke="#241a4e" stroke-width="3" fill="none" opacity=".8"/>
+    <path d="M190 94 q8 30 -2 52" stroke="#241a4e" stroke-width="3" fill="none" opacity=".8"/>
+    <!-- каменное тело острова -->
+    <path d="M18 84 C60 70 200 70 242 84 L206 122 L228 132 L182 170 L192 178 L130 206 L114 174 L82 192 L90 152 L48 134 L72 112 Z" fill="url(#rockA)"/>
+    <!-- светящиеся кристаллы на нижней грани -->
+    <path d="M118 158 l10 22 8 -20 -9 -8 Z" fill="#7fe3ff" opacity=".92"/>
+    <path d="M150 150 l9 18 7 -16 -8 -7 Z" fill="#c98bff" opacity=".92"/>
+    <!-- водопад с дымкой внизу -->
+    <rect x="148" y="92" width="7" height="58" rx="3.5" fill="url(#waterA)" opacity=".85"/>
+    <circle cx="151" cy="152" r="7" fill="#bdefff" opacity=".35"/>
+    <!-- травяная шапка -->
+    <ellipse cx="130" cy="82" rx="116" ry="22" fill="url(#grassA)"/>
+    <ellipse cx="130" cy="76" rx="104" ry="15" fill="#9df0bd" opacity=".85"/>
+    <!-- деревце -->
+    <rect x="70" y="46" width="7" height="26" rx="3" fill="#5a3a2e"/>
+    <circle cx="73" cy="40" r="16" fill="#39b97e"/>
+    <circle cx="61" cy="47" r="10" fill="#2e8f6b"/>
+    <circle cx="86" cy="46" r="9" fill="#2e8f6b"/>
+  </svg>
+</div>
+
+<!-- Малый парящий остров (справа, дальше и медленнее) -->
+<div class="fx px" data-depth="0.34" style="inset:auto; right:7%; top:33%; z-index:-4;">
+  <svg class="island-bob slow" width="175" height="143" viewBox="0 0 260 210" aria-hidden="true">
+    <defs>
+      <linearGradient id="rockB" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#5d4d92"/><stop offset="1" stop-color="#1e1544"/>
+      </linearGradient>
+      <linearGradient id="grassB" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8ae8b0"/><stop offset="1" stop-color="#27825f"/>
+      </linearGradient>
+    </defs>
+    <path d="M18 84 C60 70 200 70 242 84 L206 122 L228 132 L182 170 L192 178 L130 206 L114 174 L82 192 L90 152 L48 134 L72 112 Z" fill="url(#rockB)"/>
+    <path d="M126 160 l11 24 9 -22 -10 -9 Z" fill="#7fe3ff" opacity=".9"/>
+    <ellipse cx="130" cy="82" rx="116" ry="22" fill="url(#grassB)"/>
+    <ellipse cx="130" cy="76" rx="104" ry="15" fill="#9df0bd" opacity=".85"/>
+    <rect x="168" y="50" width="6" height="22" rx="3" fill="#5a3a2e"/>
+    <circle cx="171" cy="44" r="14" fill="#39b97e"/>
+    <circle cx="182" cy="50" r="9" fill="#2e8f6b"/>
+  </svg>
+</div>
+
+<!-- Горы на горизонте -->
+<div id="fx-mtn-far" class="fx px" data-depth="0.04"></div>
+<div id="fx-mtn-near" class="fx px" data-depth="0.07"></div>
+
+<!-- Лепестки сакуры (тема «Сакура») -->
+<div id="fx-petals" class="fx"></div>
+
+<div class="app">
+
+  <!-- ================================================================
+       БЛОК 1 · PLAYER HUD — панель персонажа
+  ================================================================= -->
+  <header class="glass hud">
+
+    <!-- Аватар: клик переключает эмодзи-заглушку -->
+    <button class="avatar-ring" id="avatar-btn" title="Сменить аватар">🧝</button>
+
+    <!-- Имя и титул -->
+    <div class="identity">
+      <div class="char-name" id="char-name" title="Кликните, чтобы переименовать">Путник</div>
+      <span class="title-chip" id="char-title">Ученик слизи</span><br>
+      <span class="title-chip class-chip" id="char-class" data-action="open-class-picker"
+            title="Кликните, чтобы сменить класс">🎭 Выбрать класс</span><br>
+      <span class="buff-chip hidden" id="buff-x2">✨ ×2 XP сегодня!</span>
+    </div>
+
+    <!-- Уровень -->
+    <div class="level-box">
+      <div class="level-label">Level</div>
+      <div class="level-num" id="char-level">1</div>
+    </div>
+
+    <!-- Полосы: HP / MP / XP -->
+    <div class="bars">
+      <div class="bar-row hp">
+        <i class="fa-solid fa-heart"></i><span class="bar-caption">Здоровье</span>
+        <div class="bar-track"><div class="bar-fill fill-hp" id="hp-bar"></div></div>
+        <span class="bar-value" id="hp-text">100/100</span>
+      </div>
+      <div class="bar-row mp">
+        <i class="fa-solid fa-droplet"></i><span class="bar-caption">Фокус (MP)</span>
+        <div class="bar-track"><div class="bar-fill fill-mp" id="mp-bar"></div></div>
+        <span class="bar-value" id="mp-text">100/100</span>
+      </div>
+      <div class="bar-row xp" title="Формула уровня: NextLevelXP = Level × 150">
+        <i class="fa-solid fa-star"></i><span class="bar-caption">Опыт</span>
+        <div class="bar-track"><div class="bar-fill fill-xp" id="xp-bar"></div></div>
+        <span class="bar-value" id="xp-text">0/150</span>
+      </div>
+    </div>
+
+    <!-- Ресурсы: золото, кристаллы, интеллект -->
+    <div class="resources">
+      <div class="res-chip res-gold" title="Золотые монеты">
+        <i class="fa-solid fa-coins"></i><span id="res-gold">0</span>
+      </div>
+      <div class="res-chip res-gem" title="Кристаллы — премиум-валюта за супер-достижения">
+        <i class="fa-solid fa-gem"></i><span id="res-cry">0</span>
+      </div>
+      <div class="res-chip res-int" title="Интеллект растёт от учёбы в Академии">
+        <i class="fa-solid fa-brain"></i><span id="res-int">0 INT</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================================================================
+       БЛОК 2 · ДОСКА КВЕСТОВ (4 зоны)
+       Цвет каждой зоны задаётся через --acc (пастельные тона)
+  ================================================================= -->
+  <main class="zones">
+
+    <!-- ===== 1. Ежедневные поручения (привычки) ===== -->
+    <section class="glass" style="--acc:var(--pastel-yellow)">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-scroll"></i><h2>Ежедневные поручения</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Привычки дня: <b style="color:var(--gold)">+10 XP +5🪙</b>. Тип 💤 отдых восстанавливает фокус. Пропуск до конца дня: <b style="color:#ff8fa3">−20 ❤</b>.</p>
+
+      <div class="quest-list" id="list-habits" style="padding:0 22px"></div>
+
+      <div style="padding:14px 22px 20px">
+        <button class="btn btn-ghost" data-action="open-form" data-target="form-habits">
+          <i class="fa-solid fa-plus"></i> Взять квест
+        </button>
+        <form class="form-panel hidden" id="form-habits">
+          <input type="text" id="h-input" placeholder="Например: пить 2л воды 💧" required style="flex:1 1 170px">
+          <select id="h-type" title="Тип привычки">
+            <option value="task">⚔️ Дело (+10 XP)</option>
+            <option value="rest">💤 Отдых (+MP)</option>
+          </select>
+          <select id="h-cat" title="Какую характеристику тренирует">
+            <option value="str">💪 Тело</option>
+            <option value="wis">🧠 Разум</option>
+            <option value="cha">💬 Харизма</option>
+          </select>
+          <button class="btn" type="submit">Добавить</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== 2. Академия Магии (учёба) ===== -->
+    <section class="glass" style="--acc:var(--pastel-lilac)">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-hat-wizard"></i><h2>Академия Магии</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Учебные задания с дедлайнами. Даёт <b style="color:var(--gold)">XP</b>, <b style="color:var(--pastel-lilac)">Интеллект</b>, но тратит <b style="color:var(--mp-blue)">фокус (MP)</b>.</p>
+
+      <div class="quest-list" id="list-academy" style="padding:0 22px"></div>
+
+      <div style="padding:14px 22px 20px">
+        <button class="btn btn-ghost" data-action="open-form" data-target="form-academy">
+          <i class="fa-solid fa-plus"></i> Взять квест
+        </button>
+        <form class="form-panel hidden" id="form-academy">
+          <input type="text" id="a-title" placeholder="Название задания…" required style="flex:1 1 160px">
+          <input type="text" id="a-subject" placeholder="Предмет" style="flex:1 1 110px">
+          <input type="date" id="a-deadline" required style="flex:1 1 140px">
+          <select id="a-diff" title="Сложность влияет на награду и трату MP">
+            <option value="easy">Лёгкая</option>
+            <option value="mid" selected>Средняя</option>
+            <option value="hard">Сложная</option>
+          </select>
+          <button class="btn" type="submit">Добавить</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== 3. Задания Гильдии (работа/проекты) ===== -->
+    <section class="glass" style="--acc:var(--pastel-coral)">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-shield-halved"></i><h2>Задания Гильдии</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Ранги D → S: чем выше ранг, тем больше <b style="color:var(--gold)">монет и XP</b>. Ранги A и S приносят <b style="color:var(--gem-purple)">💎 кристаллы</b>.</p>
+
+      <div class="quest-list" id="list-guild" style="padding:0 22px"></div>
+
+      <div style="padding:14px 22px 20px">
+        <button class="btn btn-ghost" data-action="open-form" data-target="form-guild">
+          <i class="fa-solid fa-plus"></i> Взять квест
+        </button>
+        <button class="btn btn-ghost" data-action="gen-quest" title="Случайный заказ из общей доски">
+          <i class="fa-solid fa-dice"></i> Заказ гильдии
+        </button>
+        <button class="btn btn-ghost hidden" id="btn-personal" data-action="gen-personal"
+                title="Уникальное задание вашего класса · награда ×1.25">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Личный заказ
+        </button>
+        <form class="form-panel hidden" id="form-guild">
+          <input type="text" id="g-title" placeholder="Название задания…" required style="flex:1 1 180px">
+          <select id="g-rank" title="Ранг определяет награду">
+            <option value="D">D — мелочь</option>
+            <option value="C">C — обычное</option>
+            <option value="B">B — сложное</option>
+            <option value="A">A — эпик 💎</option>
+            <option value="S">S — легенда 💎💎💎</option>
+          </select>
+          <button class="btn" type="submit">Добавить</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== 4. Кошелек Авантюриста (финансы) ===== -->
+    <section class="glass" style="--acc:var(--pastel-mint)">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-wallet"></i><h2>Кошелек Авантюриста</h2>
+      </div>
+      <div class="wallet-summary" id="wallet-summary" style="padding:6px 22px 0"><!-- итоги из JS --></div>
+
+      <div class="quest-list" id="list-finance" style="padding:0 22px"></div>
+
+      <div style="padding:14px 22px 20px">
+        <button class="btn btn-ghost" data-action="open-form" data-target="form-finance">
+          <i class="fa-solid fa-plus"></i> Добавить операцию
+        </button>
+        <form class="form-panel hidden" id="form-finance">
+          <select id="f-type">
+            <option value="income">💰 Доход (лут, зарплата)</option>
+            <option value="expense">🧾 Расход (зелья, еда, аренда)</option>
+          </select>
+          <input type="text" id="f-title" placeholder="Описание…" required style="flex:1 1 150px">
+          <input type="number" id="f-amount" placeholder="Сумма" min="1" step="1" required style="flex:1 1 100px">
+          <button class="btn" type="submit">Записать</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================================================================
+       БЛОК 3 · РЕЙД-БОССЫ — большие цели с общим HP
+  ================================================================= -->
+  <section class="glass" style="--acc:#ff8f8f">
+    <div class="panel-head" style="padding:20px 24px 0">
+      <i class="fa-solid fa-dragon"></i><h2>Рейд-боссы</h2>
+    </div>
+    <p class="panel-sub" style="padding:0 24px">Большая цель = босс. Подзадачи наносят ему урон, победа даёт жирный лут (награда растёт от прочности). Просрочите дедлайн — босс контратакует (<b style="color:#ff8fa3">−15 ❤</b>).</p>
+
+    <div id="list-bosses" style="padding:0 24px"></div>
+
+    <div style="padding:14px 24px 22px">
+      <button class="btn btn-ghost" data-action="open-form" data-target="form-boss">
+        <i class="fa-solid fa-plus"></i> Вызвать босса
+      </button>
+      <form class="form-panel hidden" id="form-boss">
+        <input type="text" id="b-icon" placeholder="Эмодзи 👹" maxlength="4" style="flex:0 1 90px">
+        <input type="text" id="b-name" placeholder="Имя босса / цель…" required style="flex:1 1 200px">
+        <input type="number" id="b-hp" placeholder="Прочность HP" min="50" max="999" step="10" value="100" style="flex:0 1 140px">
+        <input type="date" id="b-deadline" required style="flex:0 1 150px">
+        <button class="btn" type="submit">Призвать</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Лавка + Алхимия -->
+  <div class="row c2">
+
+    <!-- ===== ЛАВКА ТОРГОВЦА ===== -->
+    <section class="glass" style="--acc:var(--pastel-pink)">
+      <div class="panel-head" style="padding:20px 24px 0">
+        <i class="fa-solid fa-store"></i><h2>Лавка Торговца</h2>
+        <span style="margin-left:auto" class="res-chip res-gold">
+          <i class="fa-solid fa-coins"></i><span id="shop-gold">0</span>
+        </span>
+      </div>
+      <p class="panel-sub" style="padding:0 24px">Обменяй монеты на награды из реальной жизни. Навык «Харизма» даёт скидку!</p>
+
+      <div class="shop-grid" id="list-shop" style="padding:0 24px"></div>
+
+      <div style="padding:16px 24px 22px">
+        <button class="btn btn-ghost" data-action="open-form" data-target="form-shop">
+          <i class="fa-solid fa-plus"></i> Создать награду
+        </button>
+        <form class="form-panel hidden" id="form-shop">
+          <input type="text" id="s-icon" placeholder="Эмодзи 🎁" maxlength="4" style="flex:0 1 90px">
+          <input type="text" id="s-title" placeholder="Награда: например «Поиграть 2 часа»" required style="flex:1 1 220px">
+          <input type="number" id="s-price" placeholder="Цена в 🪙" min="1" step="1" required style="flex:0 1 120px">
+          <button class="btn" type="submit">Выставить товар</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== АЛХИМИЯ ===== -->
+    <section class="glass" style="--acc:#7fe3d1">
+      <div class="panel-head" style="padding:20px 24px 0">
+        <i class="fa-solid fa-flask"></i><h2>Алхимия</h2>
+      </div>
+      <p class="herb-line" id="alch-herbs" style="padding:4px 24px 0">Эссенции: <b>0 🌿</b></p>
+      <p class="panel-sub" style="padding:0 24px">Эссенции падают с любых квестов. Варите зелья и сундуки удачи!</p>
+
+      <div id="list-alchemy" style="padding:0 24px 22px"></div>
+    </section>
+  </div>
+
+  <!-- Древо навыков + Питомец + Помодоро -->
+  <div class="row c3">
+
+    <!-- ===== ДРЕВО НАВЫКОВ ===== -->
+    <section class="glass" style="--acc:#a7c7ff">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-tree"></i><h2>Древо навыков</h2>
+        <span style="margin-left:auto" class="res-chip res-int">
+          <i class="fa-solid fa-star-half-stroke"></i><span id="skill-points">0</span>
+        </span>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Очки дают уровни (+2) и тренировки привычек (5 выполнений = +1 навык).</p>
+
+      <div id="list-skills" style="padding:0 22px 20px"></div>
+    </section>
+
+    <!-- ===== ПИТОМЕЦ ===== -->
+    <section class="glass" style="--acc:var(--pastel-pink)">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-paw"></i><h2>Питомец</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Кормится идеальными днями (все привычки закрыты) и эволюционирует.</p>
+
+      <div style="padding:0 22px 20px">
+        <div class="pet-stage" id="pet-emoji">🐣</div>
+        <div class="pet-name" id="pet-name" data-action="rename-pet" title="Кликните, чтобы переименовать">Пушистик · Птенец</div>
+        <div class="bar-track thin"><div class="bar-fill fill-pet" id="pet-bar" style="width:0%"></div></div>
+        <div class="pet-progress" id="pet-text"></div>
+      </div>
+    </section>
+
+    <!-- ===== РЕЙД ФОКУСА (Pomodoro) ===== -->
+    <section class="glass pomo" id="sec-pomo" style="--acc:#ffcf9e">
+      <div class="panel-head" style="padding:20px 22px 0">
+        <i class="fa-solid fa-stopwatch"></i><h2>Рейд фокуса</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 22px">Помодоро-рейд: старт стоит <b style="color:var(--mp-blue)">10 💧</b>, победа даёт XP и 🌿. Клавиша <b>P</b>.</p>
+
+      <div style="padding:0 22px 20px; text-align:center">
+        <select id="pomo-len" title="Длительность рейда">
+          <option value="15">15 минут</option>
+          <option value="25" selected>25 минут</option>
+          <option value="50">50 минут</option>
+        </select>
+        <div class="pomo-time" id="pomo-time">25:00</div>
+        <div class="pomo-status" id="pomo-status">Готов к рейду</div>
+        <div class="pomo-btns">
+          <button class="btn-mini" data-action="pomo-toggle"><i class="fa-solid fa-play"></i> Старт / Пауза</button>
+          <button class="btn-mini" data-action="pomo-reset"><i class="fa-solid fa-rotate-left"></i> Сброс</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Хроника недели + Достижения -->
+  <div class="row c2">
+
+    <!-- ===== ГРАФИК НЕДЕЛИ ===== -->
+    <section class="glass" style="--acc:var(--gold)">
+      <div class="panel-head" style="padding:20px 24px 0">
+        <i class="fa-solid fa-chart-column"></i><h2>Хроника недели</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 24px">Сколько опыта вы получали в последние 7 дней.</p>
+      <div style="padding:0 24px 22px">
+        <canvas id="week-canvas" width="560" height="210"></canvas>
+      </div>
+    </section>
+
+    <!-- ===== ДОСТИЖЕНИЯ ===== -->
+    <section class="glass" style="--acc:var(--gem-purple)">
+      <div class="panel-head" style="padding:20px 24px 0">
+        <i class="fa-solid fa-trophy"></i><h2>Достижения</h2>
+      </div>
+      <p class="panel-sub" style="padding:0 24px">Открываются автоматически и приносят кристаллы 💎.</p>
+      <div class="ach-grid" id="list-ach" style="padding:0 24px 22px"></div>
+    </section>
+  </div>
+
+  <!-- ===== ПАТИ ===== -->
+  <section class="glass" style="--acc:var(--mp-blue)">
+    <div class="panel-head" style="padding:20px 24px 0">
+      <i class="fa-solid fa-people-group"></i><h2>Пати авантюристов</h2>
+    </div>
+    <p class="panel-sub" style="padding:0 24px">Экспортируйте свой сейв и отправьте другу — загрузив его файл, сравните статистику и призовите совместного рейд-босса!</p>
+
+    <div style="padding:0 24px">
+      <div class="party-cols">
+        <div class="hero-mini" id="party-me"></div>
+        <span class="vs">VS</span>
+        <div class="hero-mini" id="party-friend"></div>
+      </div>
+      <div class="party-btns">
+        <button class="btn btn-ghost" data-action="export-save"><i class="fa-solid fa-file-export"></i> Экспорт сейва</button>
+        <button class="btn btn-ghost" data-action="import-mine"><i class="fa-solid fa-file-import"></i> Импорт своего</button>
+        <button class="btn btn-ghost" data-action="import-friend"><i class="fa-solid fa-user-plus"></i> Загрузить друга</button>
+        <button class="btn btn-ghost" data-action="clear-friend"><i class="fa-solid fa-user-minus"></i> Убрать друга</button>
+        <button class="btn" data-action="coop-raid"><i class="fa-solid fa-dragon"></i> Совместный рейд!</button>
+      </div>
+    </div>
+    <div style="height:20px"></div>
+  </section>
+
+  <!-- ================================================================
+       Служебная панель: тестирование игровых механик
+  ================================================================= -->
+  <footer class="dev-bar">
+    <select id="profile-select" title="Профили персонажей"></select>
+    <button class="dev-btn" id="btn-create-profile" title="Создать профиль">＋ Профиль</button>
+    <button class="dev-btn warn" id="btn-delete-profile" title="Удалить текущий профиль">🗑 Профиль</button>
+    <button class="dev-btn" id="btn-theme" title="Сменить тему (клавиша T)">🌙 Ночь</button>
+    <button class="dev-btn" id="btn-mute" title="Звук вкл/выкл (клавиша M)">🔊 Звук</button>
+    <button class="dev-btn" id="btn-notify">🔕 Уведомления: выкл</button>
+    <button class="dev-btn" id="btn-export" title="Сохранить сейв файлом">💾 Экспорт</button>
+    <span style="opacity:.4">|</span>
+    <button class="dev-btn" id="dev-xp" title="Быстрая проверка левелапа">+50 XP</button>
+    <button class="dev-btn" id="dev-gold">+100 🪙</button>
+    <button class="dev-btn" id="dev-cry">+1 💎</button>
+    <button class="dev-btn" id="btn-simulate-day" title="Пропущенные привычки отнимут HP">⏩ Новый день</button>
+    <button class="dev-btn warn" id="btn-reset">⟲ Сбросить прогресс</button>
+    <span class="dev-spacer"></span>
+    <span>⌨️ h·a·g·f·b·s — формы · p — помодоро · t — тема · m — звук</span>
+  </footer>
+</div>
+
+<!-- Скрытый input для импорта сейвов (свой / друга) -->
+<input type="file" id="file-import" accept=".json,application/json" class="hidden">
+
+<!-- Контейнер всплывающих уведомлений -->
+<div id="toast-container"></div>
+
+<!-- ===== МОДАЛКА: LEVEL UP! ===== -->
+<div class="overlay hidden" id="overlay-levelup">
+  <div class="modal-card">
+    <div class="rays"></div>
+    <div class="confetti" id="lu-confetti"></div>
+    <div class="lu-caption">Система приключений</div>
+    <div class="lu-title">LEVEL UP!</div>
+    <div class="lu-level">Теперь вы — уровень <span id="lu-level">2</span>!</div>
+    <div class="lu-restored">❤ и 💧 полностью восстановлены!</div>
+    <div><span class="lu-newtitle hidden" id="lu-newtitle"></span></div>
+    <blockquote class="lu-quote" id="lu-quote"></blockquote>
+    <button class="btn" id="lu-continue" style="--acc:var(--gold)">Продолжить путь ➜</button>
+  </div>
+</div>
+
+<!-- ===== МОДАЛКА: GAME OVER (HP = 0) ===== -->
+<div class="overlay hidden" id="overlay-wasted">
+  <div class="modal-card wasted-modal">
+    <div class="wasted-title">WASTED</div>
+    <div class="wasted-sub">Исчерпан лимит сил…</div>
+    <div class="wasted-loss" id="w-lost"></div>
+    <button class="btn" id="w-respawn" style="--acc:#ff8fa3">Возродиться ⟳</button>
+  </div>
+</div>
+
+<!-- ===== МОДАЛКА: CG-СЦЕНА (босс повержен / эволюция питомца) ===== -->
+<div class="overlay hidden" id="overlay-scene">
+  <div class="modal-card scene-modal">
+    <div class="rays"></div>
+    <div class="scene-emoji" id="scene-emoji">🏆</div>
+    <div class="scene-title" id="scene-title">ПОБЕДА!</div>
+    <div class="scene-sub" id="scene-sub"></div>
+    <div style="margin-top:24px">
+      <button class="btn" id="scene-continue" style="--acc:var(--gold)">Далее ➜</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== МОДАЛКА: ВЫБОР КЛАССА ПЕРСОНАЖА ===== -->
+<div class="overlay hidden" id="overlay-class">
+  <div class="modal-card">
+    <div class="rays"></div>
+    <div class="lu-caption">Кто вы в этом мире?</div>
+    <div class="pick-title">ВЫБЕРИТЕ КЛАСС</div>
+    <div class="class-grid" id="class-grid"></div>
+    <div class="pick-btns">
+      <button class="btn btn-ghost hidden" id="class-cancel">Отмена</button>
+      <button class="btn" id="class-confirm" style="--acc:var(--gold)" disabled>Подтвердить выбор ✔</button>
+    </div>
+    <p class="class-note">Выберите карточку и нажмите «Подтвердить выбор». Класс можно сменить в любой момент — кликните по нему в шапке персонажа. Прогресс сохранится.</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ====================================================================
+   🎮 ИГРОВАЯ ЛОГИКА «LifeRPG: Исекай моей жизни»
+   Разделы:
+     A. CONFIG — все настройки баланса (меняйте смело!)
+     B. Утилиты
+     C. Состояние + сохранение в localStorage
+     D. Игровая математика (XP, HP, MP, золото, кристаллы, смерть)
+     E. Действия игрока (квесты всех зон, лавка)
+     F. Смена суток (штрафы за пропуск, восстановление после сна)
+     G. Рендер интерфейса
+     H. Toasts и модалки
+     I. Обработчики событий и запуск
+==================================================================== */
+
+/* ============================ A. CONFIG =============================
+   ⚙️ ВСЕ ЗНАЧЕНИЯ ДЛЯ ЛЁГКОЙ НАСТРОЙКИ ИГРЫ — СОБРАНЫ ЗДЕСЬ
+==================================================================== */
+
+/* ---- Профили: каждый профиль = отдельный мир в localStorage ---- */
+const PROFILES_INDEX_KEY = 'liferpg_profiles_idx';
+const CURRENT_PROFILE_KEY = 'liferpg_current_profile';
+let profileList = ['Основной'];
+let currentProfile = 'Основной';
+const storageKey = () => `liferpg_isekai_v2__${currentProfile}`;
+
+const CONFIG = {
+  /* --- Персонаж --- */
+  startHP: 100, startMP: 100,     // стартовые очки здоровья и фокуса
+  hpAfterDeath: 50,               // сколько HP возвращается после Game Over
+
+  /* --- Штрафы смерти (HP = 0) --- */
+  deathXPLossRate: 0.25,          // теряется 25% накопленного XP уровня
+  deathGoldLossRate: 0.10,        // и 10% золотых монет
+
+  /* --- Привычки (Ежедневные поручения) --- */
+  habitXP: 10,  habitGold: 5,     // награда за выполненную привычку
+  habitMissHP: 20,                // урон за ПРОПУСК привычки-«дела» за день
+  restHabitXP: 5,                 // привычка типа «отдых» даёт меньше XP...
+  restHabitMP: 15,                // ...но восстанавливает фокус (MP)
+  sleepMPRecovery: 20,            // сколько MP восстанавливается за ночь
+  crystalAllDone: 1,              // 💎 за ВСЕ выполненные привычки за день
+
+  /* --- Академия Магии (учёба): награды по сложности --- */
+  academyDiff: {
+    easy: { label: 'Лёгкая',  xp: 30, mp: 6,  int: 1 },
+    mid:  { label: 'Средняя', xp: 50, mp: 10, int: 2 }, // базовое значение из ТЗ
+    hard: { label: 'Сложная', xp: 70, mp: 14, int: 3 },
+  },
+
+  /* --- Гильдия (работа): таблица рангов D → S --- */
+  guildRanks: {
+    D: { xp: 10, gold: 10,  mp: 0,  cry: 0 },
+    C: { xp: 20, gold: 25,  mp: 5,  cry: 0 },
+    B: { xp: 35, gold: 45,  mp: 10, cry: 0 },
+    A: { xp: 55, gold: 75,  mp: 15, cry: 1 },   // эпик: +1 кристалл
+    S: { xp: 80, gold: 120, mp: 20, cry: 3 },   // легенда: +3 кристалла
+  },
+
+  /* --- Кристаллы 💎 за рубежи уровней --- */
+  crystalsPerMilestone: 2,        // каждые 5 уровней (см. LEVEL_MILESTONE)
+  LEVEL_MILESTONE: 5,
+
+  /* ==================== ДОПОЛНЕНИЯ V2 ==================== */
+  statPointsPerLevel: 2,          // очков древа навыков за каждый уровень
+  trainPerPoint: 5,               // выполнений привычки = +1 уровень навыка
+
+  herbChance: 0.25,               // шанс выпадения эссенции 🌿 с квеста
+
+  bossPenaltyHP: 15,              // контратака просроченного босса по игроку
+  bossGoldPerHP: 1,               // награды босса растут от его прочности:
+  bossXPPerHP: 0.6,               //   gold = HP × 1 · xp = HP × 0.6 · 💎 за 120/200+ HP
+
+  pomoMPCost: 10,                 // старт помодоро стоит фокуса
+  pomoXP: { 15: 20, 25: 35, 50: 60 },  // награда XP по длине рейда
+  pomoHerbs: 5,                   // 🌿 за завершённый рейд фокуса
+
+  fortuneDoubleChance: 0.25,      // шанс «дня ×2 XP» при ежедневной фортуне
+  fortuneGemChance: 0.15,         // затем шанс кристалла (иначе — монеты)
+  fortuneGoldMin: 15,
+  fortuneGoldMax: 60,
+
+  notifyHour: 21,                 // с какого часа слать вечернее напоминание
+};
+
+/* ФОРМУЛА ОПЫТА: сколько XP нужно для следующего уровня.
+   Хотите другую прогрессию — меняйте только эту строку. */
+const xpNeeded = (level) => level * 150;
+
+/* Титулы: выдаются каждые 10 уровней (последний — навсегда) */
+const TITLES = [
+  { minLevel: 0,  title: 'Ученик слизи' },
+  { minLevel: 10, title: 'Искатель приключений' },
+  { minLevel: 20, title: 'Рыцарь' },
+  { minLevel: 30, title: 'Магистр' },
+  { minLevel: 40, title: 'Герой Исекая' },
+];
+const titleFor = (lvl) => TITLES.reduce((acc, t) => (lvl >= t.minLevel ? t.title : acc), TITLES[0].title);
+
+/* Цитаты для окна LEVEL UP */
+const QUOTES = [
+  '«Каждый великий герой когда-то не умел даже держать меч.»',
+  '«Гильдия замечает не тех, кто силён, а тех, кто приходит каждый день.»',
+  '«Даже слизь, побеждённая тысячу раз, становится опытом тысячу первой победы.»',
+  '«Портал в лучшую жизнь открывается изнутри маленьких побед.»',
+  '«Твой лут — это навыки. Инвентарь прокачивается только руками.»',
+  '«Босс по имени „Дедлайн“ боится тех, кто фармит опыт заранее.»',
+  '«Сохранение сделано. Продолжай свою историю.»',
+];
+
+/* Аватары-заглушки (переключаются кликом) */
+const AVATARS = ['🧝', '🧙', '🥷', '👾', '🐱', '🐉'];
+
+/* ===== v2: темы оформления — целые фэнтези-сцены.
+   Небо, горы и светило каждой темы описаны в CSS (body[data-theme]),
+   здесь — только id и подпись кнопки переключения */
+const THEMES = [
+  { id: 'night',  label: '🌙 Ночь' },
+  { id: 'sunset', label: '🌇 Закат' },
+  { id: 'sakura', label: '🌸 Сакура' },
+];
+
+/* ===== v2.1: КЛАССЫ ПЕРСОНАЖА =====
+   mods — игровые модификаторы (легко добавить свой класс по образцу):
+     xpMult     — множитель XP за квесты
+     goldMult   — множитель монет за квесты
+     crit       — шанс крита (двойная награда XP+монеты)
+     mpCostAll  — множитель стоимости фокуса за задания
+     academyXP  — доп. множитель XP именно за учёбу
+     hpBonus / mpBonus — бонус к максимуму HP / MP
+     missDmg    — множитель получаемого урона (пропуски, боссы)
+     rest       — множитель восстановления фокуса от отдыха и сна
+     shopOff    — дополнительная скидка в Лавке
+     perfectGem — доп. 💎 за идеальный день */
+const CLASSES = {
+  sword: {
+    icon: '⚔️', name: 'Мечник', cc: '#ffcf5c',
+    perks: ['+10% XP за все квесты'],
+    mods: { xpMult: 1.10 },
+  },
+  archer: {
+    icon: '🏹', name: 'Лучник', cc: '#7fe3a1',
+    perks: ['20% шанс крита (×2 награда)', '+5% монет'],
+    mods: { crit: 0.20, goldMult: 1.05 },
+  },
+  tank: {
+    icon: '🛡️', name: 'Танк', cc: '#6db9ff',
+    perks: ['Максимум HP +40', 'Получаемый урон −30%'],
+    mods: { hpBonus: 40, missDmg: 0.70 },
+  },
+  mage: {
+    icon: '🧙', name: 'Маг', cc: '#c98bff',
+    perks: ['Максимум MP +40', 'Задания стоят −35% фокуса', '+15% XP за учёбу'],
+    mods: { mpBonus: 40, mpCostAll: 0.65, academyXP: 1.15 },
+  },
+  assassin: {
+    icon: '🗡️', name: 'Ассасин', cc: '#ff8fa3',
+    perks: ['+20% монет за квесты', '−10% цены в Лавке'],
+    mods: { goldMult: 1.20, shopOff: 0.10 },
+  },
+  priest: {
+    icon: '✨', name: 'Жрец', cc: '#ffe08a',
+    perks: ['Отдых и сон лечат ×2 фокус', '+1 💎 за идеальный день'],
+    mods: { rest: 2, perfectGem: 1 },
+  },
+};
+
+/* ===== v2: древо навыков. Очки дают уровни и тренировки привычек ===== */
+const SKILL_META = {
+  str: { name: 'Тело',    icon: 'fa-dumbbell', desc: '+2% монет за квесты за уровень' },
+  wis: { name: 'Разум',   icon: 'fa-brain',    desc: '+2% XP за учёбу за уровень' },
+  cha: { name: 'Харизма', icon: 'fa-comments', desc: '−2% цены в Лавке за уровень (до −40%)' },
+};
+
+/* ===== v2: питомец растёт от «идеальных дней» (все привычки закрыты) ===== */
+const PET_STAGES = [
+  { at: 0,  emoji: '🐣', name: 'Птенец' },
+  { at: 5,  emoji: '🐥', name: 'Сокольчик' },
+  { at: 15, emoji: '🦅', name: 'Грифон' },
+  { at: 30, emoji: '🐉', name: 'Дракон' },
+];
+
+/* ===== v2: рецепты алхимии (цена в эссенциях 🌿) ===== */
+const RECIPES = [
+  { id: 'focus', icon: '🧪', name: 'Зелье фокуса',  cost: 10, desc: '+40 💧 MP' },
+  { id: 'xp',    icon: '⚗️', name: 'Эликсир опыта', cost: 25, desc: '+100 ⭐ XP' },
+  { id: 'chest', icon: '🎁', name: 'Сундук удачи',  cost: 40, desc: 'случайная награда' },
+];
+
+/* ===== v2: достижения — проверяются автоматически после любого действия.
+   r — награда в 💎, check — условие открытия ===== */
+const ACHIEVEMENTS = [
+  { id: 'q1',     icon: 'fa-flag-checkered', t: 'Первая кровь',    d: 'Выполнить 1 квест',        r: 1, check: s => s.totals.quests >= 1 },
+  { id: 'q25',    icon: 'fa-list-check',     t: 'Рабочая лошадка', d: '25 выполненных квестов',   r: 2, check: s => s.totals.quests >= 25 },
+  { id: 'q100',   icon: 'fa-crown',          t: 'Сотня!',          d: '100 выполненных квестов',  r: 5, check: s => s.totals.quests >= 100 },
+  { id: 'str7',   icon: 'fa-fire',           t: 'Неделя огня',     d: 'Стрик 7 дней на привычке', r: 3, check: s => s.habits.some(h => h.streak >= 7) },
+  { id: 'lvl10',  icon: 'fa-star',           t: 'Двузначный',      d: 'Достичь 10 уровня',        r: 3, check: s => s.level >= 10 },
+  { id: 'lvl25',  icon: 'fa-medal',          t: 'Ветеран',         d: 'Достичь 25 уровня',        r: 5, check: s => s.level >= 25 },
+  { id: 'sr1',    icon: 'fa-khanda',         t: 'Легенда гильдии', d: 'Сдать квест ранга S',      r: 3, check: s => s.totals.srank >= 1 },
+  { id: 'boss1',  icon: 'fa-dragon',         t: 'Убийца боссов',   d: 'Победить первого босса',   r: 3, check: s => s.totals.bosses >= 1 },
+  { id: 'perf1',  icon: 'fa-gem',            t: 'Идеальный день',  d: 'Все привычки за день',     r: 1, check: s => s.totals.perfect >= 1 },
+  { id: 'perf10', icon: 'fa-calendar-check', t: 'Дисциплина',      d: '10 идеальных дней',        r: 3, check: s => s.totals.perfect >= 10 },
+  { id: 'pomo10', icon: 'fa-stopwatch',      t: 'Мастер фокуса',   d: '10 завершённых помодоро',  r: 3, check: s => s.totals.pomodoros >= 10 },
+  { id: 'rich',   icon: 'fa-sack-dollar',    t: 'Богач',           d: 'Накопить 10 000 🪙',       r: 2, check: s => s.gold >= 10000 },
+  { id: 'shop1',  icon: 'fa-cart-shopping',  t: 'Первая покупка',  d: 'Купить награду в Лавке',   r: 1, check: s => s.totals.purchases >= 1 },
+  { id: 'alch5',  icon: 'fa-flask',          t: 'Алхимик',         d: 'Сварить 5 предметов',      r: 2, check: s => s.totals.crafts >= 5 },
+];
+
+/* ============================ B. УТИЛИТЫ =========================== */
+
+const $id = (id) => document.getElementById(id);
+
+/* Уникальный идентификатор записи */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* Дата сегодня в формате YYYY-MM-DD (локальная зона) */
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/* Дата через N дней (для сид-данных и дефолта формы) */
+function daysFromNowISO(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/* Сколько дней осталось до дедлайна (минус = просрочено) */
+function daysUntil(iso) {
+  const t = new Date(iso + 'T00:00:00');
+  const now = new Date(todayISO() + 'T00:00:00');
+  return Math.round((t - now) / 86400000);
+}
+
+/* ДД.ММ.ГГГГ для человека */
+const fmtDate = (iso) => iso.split('-').reverse().join('.');
+
+/* Разделение разрядов: 12500 → "12 500" */
+const fmtMoney = (n) => n.toLocaleString('ru-RU');
+
+/* Экранирование ввода пользователя перед вставкой в innerHTML */
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[ch]);
+}
+
+/* Случайное целое [min..max] и проверка шанса (v2) */
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const chance  = (p) => Math.random() < p;
+
+/* ==================== C. СОСТОЯНИЕ И SAVE/LOAD ===================== */
+
+let state = null;
+
+/* Стартовый мир: чтобы доска квестов сразу выглядела живой */
+function seedState() {
+  return {
+    name: 'Путник',
+    avatarIndex: 0,
+    level: 1,
+    xp: 0,                          // XP внутри текущего уровня
+    hp: CONFIG.startHP,
+    mp: CONFIG.startMP,
+    gold: 300,                      // стартовые монеты
+    crystals: 0,                    // 💎 премиум-валюта
+    int: 0,                         // интеллект (растёт от учёбы)
+    class: null,                    // выбранный класс (ключ из CLASSES) — null = не выбран
+    maxHP: CONFIG.startHP,          // актуальные максимумы (меняются от класса)
+    maxMP: CONFIG.startMP,
+    lastVisit: todayISO(),
+    allDoneCrystalDate: null,       // когда последний раз получали 💎 за все привычки
+
+    /* Привычки: type 'task' — дело (штраф за пропуск), 'rest' — отдых (+MP).
+       cat — что тренирует: str (Тело) / wis (Разум) / cha (Харизма) */
+    habits: [
+      { id: uid(), title: '💧 Пить 2 литра воды',   type: 'task', cat: 'str', done: false, streak: 0, lastDone: null },
+      { id: uid(), title: '🏃 Спорт 20 минут',      type: 'task', cat: 'str', done: false, streak: 0, lastDone: null },
+      { id: uid(), title: '📖 Читать 30 минут',     type: 'task', cat: 'wis', done: false, streak: 0, lastDone: null },
+      { id: uid(), title: '🗣 Английский 15 минут', type: 'task', cat: 'cha', done: false, streak: 0, lastDone: null },
+      { id: uid(), title: '😴 Сон 8 часов',         type: 'rest', cat: null,  done: false, streak: 0, lastDone: null },
+      { id: uid(), title: '🧘 Медитация 10 минут',  type: 'rest', cat: null,  done: false, streak: 0, lastDone: null },
+    ],
+
+    /* Академия: сложность easy/mid/hard (награды в CONFIG.academyDiff) */
+    academy: [
+      { id: uid(), title: 'Глава 4: магия массивов', subject: 'Алгоритмы', diff: 'mid',  deadline: daysFromNowISO(3), done: false },
+      { id: uid(), title: 'Курсовой свиток',         subject: 'Базы данных', diff: 'hard', deadline: daysFromNowISO(10), done: false },
+      { id: uid(), title: 'Тренажёр слов',           subject: 'Английский', diff: 'easy', deadline: daysFromNowISO(1), done: false },
+    ],
+
+    /* Гильдия: ранг D–S (награды в CONFIG.guildRanks) */
+    guild: [
+      { id: uid(), title: 'Разобрать входящие письма', rank: 'D', done: false },
+      { id: uid(), title: 'Правки по макету клиента',  rank: 'C', done: false },
+      { id: uid(), title: 'Спринт: новый модуль API',  rank: 'A', done: false },
+    ],
+
+    /* Кошелёк: доходы/расходы реальных денег */
+    finance: [
+      { id: uid(), type: 'income',  title: 'Зарплата авантюриста', amount: 45000, date: todayISO() },
+      { id: uid(), type: 'expense', title: 'Провизия (еда)',       amount: 7000,  date: todayISO() },
+      { id: uid(), type: 'expense', title: 'Аренда замка',         amount: 18000, date: todayISO() },
+    ],
+
+    /* Лавка: награды реальной жизни. Цена — в монетах 🪙 */
+    shop: [
+      { id: uid(), icon: '🎮', title: 'Поиграть 2 часа в игры', price: 100 },
+      { id: uid(), icon: '🍰', title: 'Купить вкусняшку',        price: 50 },
+      { id: uid(), icon: '📺', title: 'Сериал-марафон вечером',  price: 150 },
+      { id: uid(), icon: '📚', title: 'Новая книга в закладки',  price: 200 },
+    ],
+
+    /* ======================= ПОЛЯ V2 ======================= */
+    theme: 'night',               // тема оформления (night / sunset / sakura)
+    muted: false,                 // звук вкл/выкл
+    notify: false,                // вечерние уведомления браузера
+    notifiedDate: null,           // когда последний раз напоминали
+    fortuneDate: null,            // когда последний раз крутили фортуну
+    doubleXPDate: null,           // дата активного баффа «×2 XP»
+
+    skills:     { str: 0, wis: 0, cha: 0 },  // купленные уровни навыков
+    statPoints: 0,                           // нераспределённые очки навыков
+    train:      { str: 0, wis: 0, cha: 0 },  // прогресс тренировок (5 → +1 навык)
+
+    herbs: 0,                     // эссенции 🌿 для алхимии
+
+    pet: { name: 'Пушистик', perfectDays: 0 },  // питомец растёт от идеальных дней
+
+    achievements: [],             // id открытых достижений
+    totals: { quests: 0, srank: 0, bosses: 0, perfect: 0, pomodoros: 0, purchases: 0, crafts: 0 },
+
+    history: {},                  // { 'YYYY-MM-DD': сколько XP получено за день } — для графика
+
+    bosses: [],                   // рейд-боссы {id,name,icon,maxHP,hp,deadline,rewarded,penalized,subs}
+
+    friend: null,                 // герой друга для Пати (загружается из его файла сейва)
+  };
+}
+
+/* Рекурсивно дополняет загруженный сейв новыми полями из сида —
+   благодаря этому старые сохранения не ломаются при обновлении игры */
+function mergeDeep(base, over) {
+  if (Array.isArray(over)) return over;
+  if (over && typeof over === 'object') {
+    const out = Array.isArray(base) ? [] : { ...(base || {}) };
+    for (const k of Object.keys(over)) out[k] = mergeDeep(base ? base[k] : undefined, over[k]);
+    return out;
+  }
+  return over === undefined ? base : over;
+}
+
+function saveState() {
+  checkAchievements();   // достижения проверяются после любого действия игрока
+  localStorage.setItem(storageKey(), JSON.stringify(state));
+}
+
+function loadState() {
+  try {
+    let raw = localStorage.getItem(storageKey());
+    /* Миграция: при первом запуске v2 подтягиваем сейв первой версии */
+    if (!raw && localStorage.getItem(OLD_STORAGE_KEY)) raw = localStorage.getItem(OLD_STORAGE_KEY);
+    state = raw ? mergeDeep(seedState(), JSON.parse(raw)) : seedState();
+  } catch {
+    state = seedState(); // сейв повреждён — начинаем новую историю
+  }
+  if (!state.lastVisit) state.lastVisit = todayISO();
+}
+
+/* ---------- Профили (мультипрофили: учёба / работа / …) ---------- */
+function loadProfiles() {
+  try { profileList = JSON.parse(localStorage.getItem(PROFILES_INDEX_KEY)) || ['Основной']; }
+  catch { profileList = ['Основной']; }
+  if (!profileList.length) profileList = ['Основной'];
+  currentProfile = localStorage.getItem(CURRENT_PROFILE_KEY);
+  if (!profileList.includes(currentProfile)) currentProfile = profileList[0];
+}
+function persistProfiles() {
+  localStorage.setItem(PROFILES_INDEX_KEY, JSON.stringify(profileList));
+  localStorage.setItem(CURRENT_PROFILE_KEY, currentProfile);
+}
+function switchProfile(name) {
+  pomoPause();                                  // v2.2: таймер не должен тикать в другом мире
+  resetPomoSilent();
+  pendingClass = null;                          // сбросить незавершённый выбор класса
+  $id('overlay-class').classList.add('hidden');
+  saveState();
+  currentProfile = name;
+  persistProfiles();
+  loadState();
+  applyTheme();
+  renderAll();
+  updateDevLabels();
+  /* Если в новом профиле класс ещё не выбран — сразу предложим выбрать */
+  if (!state.class) showClassPicker();
+  showToast(`Профиль «${esc(name)}» загружен`, 'info', 'Мультипрофили');
+}
+
+/* ================= D. ИГРОВАЯ МАТЕМАТИКА ========================== */
+
+/*
+  Начисление XP с автоматическими левелапами.
+  v2: учитывает дневной бафф «×2» (фортуна) и пишет историю для графика недели.
+  При левелапе: HP/MP восстанавливаются полностью, выдаются очки древа навыков
+  и кристаллы за рубежи (каждые 5 уровней). Возвращает {leveledUp, oldLevel}.
+*/
+function grantXP(amountRaw) {
+  /* Фортуна: сегодня весь опыт идёт с удвоением */
+  const amount = (state.doubleXPDate === todayISO()) ? amountRaw * 2 : amountRaw;
+
+  /* История XP по дням — для графика «Хроника недели» */
+  const t = todayISO();
+  state.history[t] = (state.history[t] || 0) + amount;
+
+  const oldLevel = state.level;
+  state.xp += amount;
+
+  while (state.xp >= xpNeeded(state.level)) {
+    state.xp -= xpNeeded(state.level);
+    state.level++;
+  }
+
+  const leveledUp = state.level > oldLevel;
+  if (leveledUp) {
+    // Полное восстановление при левелапе (до максимумов класса)
+    state.hp = state.maxHP ?? CONFIG.startHP;
+    state.mp = state.maxMP ?? CONFIG.startMP;
+
+    /* Очки древа навыков за каждый новый уровень */
+    const gainedLevels = state.level - oldLevel;
+    state.statPoints += gainedLevels * CONFIG.statPointsPerLevel;
+    showToast(`+${gainedLevels * CONFIG.statPointsPerLevel} очка навыков! Загляните в «Древо навыков»`, 'info', '⭐ Прокачка');
+
+    /* Кристаллы за рубежи (каждые 5 уровней) */
+    const milestonesPassed =
+      Math.floor(state.level / CONFIG.LEVEL_MILESTONE) -
+      Math.floor(oldLevel / CONFIG.LEVEL_MILESTONE);
+    if (milestonesPassed > 0) {
+      state.crystals += milestonesPassed * CONFIG.crystalsPerMilestone;
+      showToast(`+${milestonesPassed * CONFIG.crystalsPerMilestone} 💎 за рубеж уровня!`, 'crystal', 'Сокровищница');
+    }
+  }
+  return { leveledUp, oldLevel };
+}
+
+/* Откат XP при снятии галочки (уровень НЕ понижаем — так честнее) */
+function revokeXP(amount) {
+  state.xp = Math.max(0, state.xp - amount);
+  const t = todayISO();
+  state.history[t] = Math.max(0, (state.history[t] || 0) - amount);
+}
+
+const grantGold = (n) => { state.gold += n; };
+
+/* ---------- v2: множители от древа навыков ---------- */
+const goldMult = () => 1 + state.skills.str * 0.02;   // «Тело»: больше монет
+const wisMult  = () => 1 + state.skills.wis * 0.02;   // «Разум»: больше XP с учёбы
+/* «Харизма» + класс: суммарная скидка в Лавке (не более −50%) */
+const discountPrice = (price) => {
+  const off = Math.min(0.5, state.skills.cha * 0.02 + clsMod('shopOff', 0));
+  return Math.max(1, Math.round(price * (1 - off)));
+};
+/* Монеты за квесты всегда проходят через множитель Тела */
+const questGold = (base) => Math.round(base * goldMult());
+
+/* Эссенции 🌿 иногда падают с любых квестов */
+function dropHerb() {
+  if (!chance(CONFIG.herbChance)) return false;
+  state.herbs += 1;
+  return true;
+}
+
+/* ---------- v2.1: помощники класса персонажа ---------- */
+/* Значение модификатора выбранного класса (или fallback, если класс не взят) */
+const clsMod = (key, fb) => {
+  const c = CLASSES[state.class];
+  return (c && c.mods[key] !== undefined) ? c.mods[key] : fb;
+};
+const clsXP    = () => clsMod('xpMult', 1);
+const clsGoldM = () => clsMod('goldMult', 1);
+/* Крит: true → награда за квест удваивается */
+const rollCrit = () => chance(clsMod('crit', 0));
+
+/* Пересчёт максимумов HP/MP под бонусы класса (с сохранением текущих значений) */
+function applyClassMaxes() {
+  state.maxHP = CONFIG.startHP + clsMod('hpBonus', 0);
+  state.maxMP = CONFIG.startMP + clsMod('mpBonus', 0);
+  state.hp = Math.min(state.hp, state.maxHP);
+  state.mp = Math.min(state.mp, state.maxMP);
+}
+
+/* Окно выбора / смены класса.
+   Флоу с подтверждением: клик по карточке только подсвечивает её
+   (pendingClass), а применение происходит по кнопке «Подтвердить». */
+let pendingClass = null;
+
+function renderClassGrid() {
+  $id('class-grid').innerHTML = Object.entries(CLASSES).map(([key, c]) => {
+    const isApplied = state.class === key;          // текущий класс (галочка)
+    const isPending = pendingClass === key && !isApplied;
+    const mark = isApplied ? ' ✓' : (isPending ? ' · выбрано' : '');
+    return `
+      <div class="class-card ${isApplied ? 'sel' : ''} ${isPending ? 'picked' : ''}"
+           data-action="choose-class" data-id="${key}" style="--cc:${c.cc}">
+        <div class="class-icon">${c.icon}</div>
+        <div class="class-name">${c.name}${mark}</div>
+        <ul class="class-perks">${c.perks.map((p) => `<li>${p}</li>`).join('')}</ul>
+      </div>`;
+  }).join('');
+  /* Кнопка подтверждения активна, только если что-то выбрано */
+  $id('class-confirm').disabled = !pendingClass;
+}
+
+function showClassPicker() {
+  pendingClass = state.class || null;               // предвыбор текущего класса
+  renderClassGrid();
+  /* «Отмена» нужна только тем, у кого класс уже есть */
+  $id('class-cancel').classList.toggle('hidden', !state.class);
+  $id('overlay-class').classList.remove('hidden');
+}
+
+/* Применение выбранного класса (вызывается кнопкой «Подтвердить») */
+function pickClass(key) {
+  if (!CLASSES[key]) return;
+  const changed = state.class !== key;
+  state.class = key;
+  applyClassMaxes();
+  commit();
+  if (changed) showToast(`${CLASSES[key].icon} Вы теперь — ${CLASSES[key].name}!`, 'crystal', 'Смена класса');
+  pendingClass = null;
+  $id('overlay-class').classList.add('hidden');
+}
+
+/* Единая точка «сохранились и перерисовались» */
+function commit() { saveState(); renderAll(); }
+
+/* Фокус (MP): true — если хватило, false — если фокуса мало */
+function useMP(amount) {
+  if (state.mp < amount) return false;
+  state.mp -= amount;
+  return true;
+}
+const restoreMP = (n) => { state.mp = Math.min(state.maxMP ?? CONFIG.startMP, state.mp + n); };
+
+/* GAME OVER: HP упало до нуля. Теряем часть XP и монет, возрождаемся */
+function gameOver() {
+  const lostXP = Math.floor(state.xp * CONFIG.deathXPLossRate);
+  const lostGold = Math.floor(state.gold * CONFIG.deathGoldLossRate);
+  state.xp -= lostXP;
+  state.gold -= lostGold;
+  state.hp = CONFIG.hpAfterDeath;
+
+  $id('w-lost').innerHTML =
+    `Тёмная магия забрала часть ваших сил:<br>` +
+    `<b>−${lostXP} XP</b> и <b>${fmtMoney(lostGold)} 🪙</b><br>` +
+    `Но герои не сдаются — здоровье частично восстановлено (<b>${CONFIG.hpAfterDeath} ❤</b>).`;
+
+  $id('overlay-wasted').classList.remove('hidden');
+  saveState(); renderAll();
+}
+
+/* ==================== E. ДЕЙСТВИЯ ИГРОКА ========================== */
+
+/* --- 1. Привычки ---------------------------------------------------- */
+function toggleHabit(habit) {
+  let res = null;   // результат grantXP — нужен в конце для модалки LEVEL UP
+  if (!habit.done) {
+    habit.done = true;
+    habit.streak += 1;                       // стрик растёт 1 раз в день
+    habit.lastDone = todayISO();
+    state.totals.quests += 1;                // считаем квест сразу (даже если будет левелап)
+
+    if (habit.type === 'rest') {
+      /* «Отдых»: чуть меньше XP, зато восстанавливает фокус (Жрец — ×2) */
+      const mpGain = Math.round(CONFIG.restHabitMP * clsMod('rest', 1));
+      res = grantXP(CONFIG.restHabitXP);
+      restoreMP(mpGain);
+      showToast(`+${CONFIG.restHabitXP} XP · +${mpGain} 💧 фокуса`, 'info', `Отдых · ${habit.title}`);
+      SFX.check();
+    } else {
+      /* Дело: XP и монеты с учётом класса; крит Лучника удваивает награду */
+      let xp   = CONFIG.habitXP * clsXP();
+      let gold = questGold(CONFIG.habitGold) * clsGoldM();
+      const crit = rollCrit();
+      if (crit) { xp *= 2; gold *= 2; }
+      xp = Math.round(xp); gold = Math.round(gold);
+
+      habit.gained = { xp, gold };             // запомним для отката
+      res = grantXP(xp);
+      grantGold(gold);
+
+      /* Тренировка характеристики: 5 выполнений = +1 уровень навыка */
+      if (habit.cat && SKILL_META[habit.cat]) {
+        state.train[habit.cat] += 1;
+        if (state.train[habit.cat] >= CONFIG.trainPerPoint) {
+          state.train[habit.cat] -= CONFIG.trainPerPoint;
+          state.skills[habit.cat] += 1;
+          showToast(`Навык «${SKILL_META[habit.cat].name}» повышен до ${state.skills[habit.cat]}!`, 'success', '⚔️ Тренировка');
+        }
+      }
+
+      const herb = dropHerb() ? ' · +1 🌿' : '';
+      showToast(`+${xp} XP · +${gold} 🪙${crit ? ' · 🎯 КРИТ!' : ''}${herb}`,
+        crit ? 'gold' : 'success', `Квест выполнен · ${habit.title}`);
+      SFX.check();
+    }
+
+    /* ИДЕАЛЬНЫЙ ДЕНЬ: выполняется ВСЕГДА — даже если этот квест поднял уровень
+       (раньше ранний return по левелапу пропускал питомца и 💎 — баг исправлен) */
+    if (state.habits.length && state.habits.every((h) => h.done)) {
+      if (state.allDoneCrystalDate !== todayISO()) {
+        state.allDoneCrystalDate = todayISO();
+        const gems = CONFIG.crystalAllDone + clsMod('perfectGem', 0);
+        state.crystals += gems;
+        state.totals.perfect += 1;
+        showToast(`Все поручения дня выполнены! +${gems} 💎`, 'crystal', 'Идеальный день!');
+      }
+      feedPet();
+    }
+  } else {
+    /* Снятие галочки: откатываем выданное (прогресс тренировки не трогаем) */
+    habit.done = false;
+    habit.streak = Math.max(0, habit.streak - 1);
+    if (habit.type === 'rest') {
+      revokeXP(CONFIG.restHabitXP);
+      state.mp = Math.max(0, state.mp - CONFIG.restHabitMP);
+    } else {
+      revokeXP(habit.gained ? habit.gained.xp : CONFIG.habitXP);
+      grantGold(-(habit.gained ? habit.gained.gold : questGold(CONFIG.habitGold)));
+    }
+    delete habit.gained;
+    showToast('Квест отменён, награда возвращена', 'warn');
+  }
+  commit();
+  /* Модалку LEVEL UP показываем в самом конце — поверх всего интерфейса */
+  if (res && res.leveledUp) showLevelUp(res.oldLevel);
+}
+
+/* --- 2. Академия Магии ---------------------------------------------- */
+function toggleAcademy(task) {
+  const cfg = CONFIG.academyDiff[task.diff];
+  if (!task.done) {
+    /* Стоимость фокуса зависит от класса (Маг платит меньше) */
+    const mpCost = Math.round(cfg.mp * clsMod('mpCostAll', 1));
+    /* Учёба требует фокуса: если MP мало — просим отдохнуть */
+    if (!useMP(mpCost)) {
+      showToast(`Не хватает фокуса (${mpCost} 💧)! Отдохните или выспитесь 💤`, 'warn', 'MP insufficient');
+      return;
+    }
+    task.done = true;
+
+    /* XP: сложность × навык «Разум» × класс × бонус Мага за учёбу */
+    const xp = Math.round(cfg.xp * wisMult() * clsXP() * clsMod('academyXP', 1));
+    task.gainedXP = xp;                        // запомним для отката
+    task.gainedMP = mpCost;
+    const res = grantXP(xp);
+    state.int += cfg.int;                      // рост интеллекта 🧠
+
+    /* Учёба тоже тренирует «Разум» */
+    state.train.wis += 1;
+    if (state.train.wis >= CONFIG.trainPerPoint) {
+      state.train.wis -= CONFIG.trainPerPoint;
+      state.skills.wis += 1;
+      showToast(`Навык «Разум» повышен до ${state.skills.wis}!`, 'success', '⚔️ Тренировка');
+    }
+
+    state.totals.quests += 1;
+    const herb = dropHerb() ? ' · +1 🌿' : '';
+    showToast(`+${xp} XP · +${cfg.int} 🧠 · −${mpCost} 💧${herb}`, 'success', `Знание получено · ${task.title}`);
+    SFX.check();
+    if (res.leveledUp) { commit(); showLevelUp(res.oldLevel); return; }
+  } else {
+    task.done = false;
+    restoreMP(task.gainedMP ?? cfg.mp);        // возврат потраченного фокуса
+    revokeXP(task.gainedXP || cfg.xp);
+    state.int = Math.max(0, state.int - cfg.int);
+    showToast('Задание отменено', 'warn');
+  }
+  commit();
+}
+
+/* --- 3. Задания Гильдии ---------------------------------------------- */
+function toggleGuild(quest) {
+  const cfg = CONFIG.guildRanks[quest.rank];
+  if (!quest.done) {
+    const mpCost = Math.round(cfg.mp * clsMod('mpCostAll', 1));
+    if (mpCost > 0 && !useMP(mpCost)) {
+      showToast(`Для ранга ${quest.rank} нужно ${mpCost} 💧 фокуса!`, 'warn', 'MP insufficient');
+      return;
+    }
+    quest.done = true;
+
+    /* Личные заказы класса щедрее на четверть */
+    const pm = quest.personal ? 1.25 : 1;
+    const gold = Math.round(questGold(cfg.gold) * clsGoldM() * pm);
+    const xp   = Math.round(cfg.xp * clsXP() * pm);
+    quest.gainedXP = xp;
+    quest.gainedGold = gold;
+    quest.gainedCry = cfg.cry;
+    quest.gainedMP = mpCost;
+
+    const res = grantXP(xp);
+    grantGold(gold);
+    if (cfg.cry > 0) state.crystals += cfg.cry;
+    if (quest.rank === 'S') state.totals.srank += 1;   // для ачивки «Легенда гильдии»
+
+    state.totals.quests += 1;
+    const extras = [`${gold} 🪙`];
+    if (cfg.cry) extras.push(`${cfg.cry} 💎`);
+    const herb = dropHerb() ? ' · +1 🌿' : '';
+    showToast(`+${xp} XP · ${extras.join(' · ')}${herb}`, 'gold', `Ранг ${quest.rank} сдан · ${quest.title}`);
+    SFX.coin();
+    if (res.leveledUp) { commit(); showLevelUp(res.oldLevel); return; }
+  } else {
+    quest.done = false;
+    restoreMP(quest.gainedMP ?? cfg.mp);
+    revokeXP(quest.gainedXP ?? cfg.xp);
+    grantGold(-(quest.gainedGold ?? cfg.gold));
+    state.crystals = Math.max(0, state.crystals - (quest.gainedCry ?? cfg.cry));
+    showToast('Квест гильдии отменён', 'warn');
+  }
+  commit();
+}
+
+/* ---------- v2.2: ГЕНЕРАТОР ЗАКАЗОВ ГИЛЬДИИ ----------
+   🎲 «Заказ гильдии» — случайное название из частей + взвешенный ранг
+       (D чаще, S — редкая удача).
+   🎭 «Личный заказ» — берётся из пула ВАШЕГО класса, награда ×1.25.
+   Пулы ниже можно свободно дополнять своими строками. */
+const QUEST_VERBS = [
+  'Зачистить', 'Доставить', 'Сопроводить', 'Разведать', 'Выкрасть',
+  'Охранять', 'Восстановить', 'Собрать', 'Проверить', 'Отыскать',
+  'Защитить', 'Обследовать',
+];
+const QUEST_OBJECTS = [
+  'гоблинские пещеры', 'древний свиток', 'караван купцов', 'забытый храм',
+  'логово виверны', 'ночные улицы столицы', 'арсенал гильдии',
+  'звёздную обсерваторию', 'пропавших котят', 'торговые пути',
+  'алхимическую лабораторию', 'стены крепости', 'подземный лабиринт',
+  'тайную рощу друидов',
+];
+/* Личные задания каждого класса — то, что подходит именно его стилю */
+const CLASS_QUESTS = {
+  sword:    [
+    'Утренняя дуэль на мечах', 'Отточить рубящий удар: 100 повторов',
+    'Спарринг с наёмным ветераном', 'Освоить приём из старого трактата',
+    'Марш-бросок с клинком через лес',
+  ],
+  archer:   [
+    'Стрельба по мишеням со ста шагов', 'Десять выстрелов точно в цель',
+    'Изготовить два десятка стрел', 'Разведка тропы с высокого холма',
+    'Попасть в яблоко трижды подряд',
+  ],
+  tank:     [
+    'Стойка со щитом под градом ударов', 'Полная проверка и починка доспеха',
+    'Тренировка падения в броне', 'Держать строй вместе с новобранцами',
+    'Восстановить баррикады гарнизона',
+  ],
+  mage:     [
+    'Прочитать главу книги заклятий', 'Отработать циркуляцию маны 15 минут',
+    'Записать три новые формулы', 'Медитация у кристалла маны',
+    'Сварить эссенс для свитков',
+  ],
+  assassin: [
+    'Прогулка по крышам без единого звука', 'Отработка бесшумного шага',
+    'Изучить карту ночных троп', 'Растяжка и контроль дыхания',
+    'Замести следы после рейда',
+  ],
+  priest:   [
+    'Помочь раненому путнику на тракте', 'Глава об искусстве исцеления',
+    'Час добровольчества в приюте', 'Благословение перед сном',
+    'Встретить рассвет утренней молитвой',
+  ],
+};
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function genQuest(personal) {
+  let title;
+  if (personal) {
+    title = pickRandom(CLASS_QUESTS[state.class] || ['Тренировка героя']);
+  } else {
+    title = `${pickRandom(QUEST_VERBS)} ${pickRandom(QUEST_OBJECTS)}`;
+  }
+  /* Взвешенный ранг: D — рутина, S — редкая удача */
+  const roll = Math.random();
+  const rank = roll < 0.30 ? 'D' : roll < 0.55 ? 'C' : roll < 0.75 ? 'B' : roll < 0.90 ? 'A' : 'S';
+
+  state.guild.push({ id: uid(), title, rank, done: false, gen: true, personal: !!personal });
+  commit();
+  showToast(
+    `«${esc(title)}» · ранг ${rank}${personal ? ' · награда ×1.25' : ''}`,
+    personal ? 'crystal' : 'info',
+    personal ? '🎭 Личный заказ' : '🎲 Заказ гильдии'
+  );
+}
+
+/* --- 4. Кошелёк Авантюриста ------------------------------------------ */
+function addFinance(type, title, amount) {
+  state.finance.unshift({ id: uid(), type, title, amount, date: todayISO() });
+  grantGold(type === 'income' ? amount : -amount);   // операция сразу меняет баланс
+  saveState(); renderAll();
+  showToast(
+    `${type === 'income' ? '+' : '−'}${fmtMoney(amount)} 🪙`,
+    type === 'income' ? 'gold' : 'damage',
+    type === 'income' ? 'Лут получен' : 'Расход учтён'
+  );
+}
+
+function deleteFinance(id) {
+  const i = state.finance.findIndex((f) => f.id === id);
+  if (i === -1) return;
+  const rec = state.finance[i];
+  grantGold(rec.type === 'income' ? -rec.amount : rec.amount); // откат влияния на баланс
+  state.finance.splice(i, 1);
+  saveState(); renderAll();
+}
+
+/* --- 5. Лавка Торговца ------------------------------------------------ */
+function buyReward(item) {
+  const price = discountPrice(item.price);   // Харизма даёт скидку
+  if (state.gold < price) {
+    showToast(`Не хватает монет! Нужно ещё ${fmtMoney(price - state.gold)} 🪙`, 'warn', 'Лавка закрыта для вас');
+    return;
+  }
+  grantGold(-price);
+  state.totals.purchases += 1;               // для ачивки «Первая покупка»
+  showToast(`Куплено: ${item.icon} ${esc(item.title)} за ${fmtMoney(price)} 🪙`, 'gold', 'Спасибо за покупку!');
+  SFX.coin();
+  commit();
+}
+
+/* ======================================================================
+   V2 · ДОПОЛНИТЕЛЬНЫЕ МЕХАНИКИ
+   Боссы · Алхимия · Питомец · Фортуна · Достижения · Помодоро ·
+   Звук (WebAudio) · Темы · Параллакс · Уведомления · Экспорт/Импорт
+====================================================================== */
+
+/* ---------- ЗВУК: крошечный синтезатор на WebAudio, без файлов ---------- */
+let AC = null;
+function audioCtx() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { AC = null; } }
+  return AC;
+}
+function tone(freq, dur, type = 'sine', vol = 0.04, delay = 0) {
+  const ctx = audioCtx();
+  if (!ctx || state.muted) return;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    o.connect(g); g.connect(ctx.destination);
+    const t = ctx.currentTime + delay;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.05);
+  } catch { /* звук — не критичен */ }
+}
+const SFX = {
+  check:   () => { tone(660, .08); tone(880, .10, 'sine', .04, .07); },
+  coin:    () => { tone(1318, .06, 'square', .03); tone(1760, .09, 'square', .03, .06); },
+  damage:  () => tone(110, .25, 'sawtooth', .05),
+  craft:   () => { tone(520, .08, 'triangle'); tone(700, .12, 'triangle', .04, .08); },
+  levelup: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .16, 'triangle', .05, i * .11)),
+  evolve:  () => [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, .14, 'triangle', .05, i * .09)),
+};
+
+/* ---------- РЕЙД-БОССЫ ---------- */
+/* Награды растут от прочности: gold = HP × k1, xp = HP × k2, 💎 за 120/200+ HP */
+function bossReward(maxHP) {
+  return {
+    gold: Math.round(maxHP * CONFIG.bossGoldPerHP),
+    xp:   Math.round(maxHP * CONFIG.bossXPPerHP),
+    cry:  maxHP >= 200 ? 3 : maxHP >= 120 ? 1 : 0,
+  };
+}
+function addBoss(icon, name, maxHP, deadline) {
+  state.bosses.push({
+    id: uid(), icon: icon || '👹', name,
+    maxHP, hp: maxHP, deadline,
+    rewarded: false, penalized: false,
+    subs: [],                                  // подзадачи-«удары»
+  });
+}
+function toggleSub(bossId, subId) {
+  const b = state.bosses.find((x) => x.id === bossId);
+  if (!b || b.rewarded) return;
+  const s = b.subs.find((x) => x.id === subId);
+  if (!s) return;
+
+  if (!s.done) {
+    s.done = true;
+    b.hp = Math.max(0, b.hp - s.dmg);          // удар по боссу
+    state.totals.quests += 1;
+    const herb = dropHerb() ? ' · +1 🌿' : '';
+    showToast(`−${s.dmg} ❤ босса${herb}`, 'damage', `Урон · ${s.title}`);
+    SFX.check();
+    if (b.hp <= 0) bossVictory(b);
+  } else {
+    s.done = false;
+    b.hp = Math.min(b.maxHP, b.hp + s.dmg);    // сняли галочку — босс «вылечился»
+    showToast('Подзадача снята, HP босса восстановлено', 'warn');
+  }
+  commit();
+}
+/* Победа над боссом: жирный лут + CG-сцена */
+function bossVictory(b) {
+  b.rewarded = true;
+  const rw = bossReward(b.maxHP);
+  state.totals.bosses += 1;
+  const res = grantXP(rw.xp);
+  grantGold(rw.gold);
+  if (rw.cry) state.crystals += rw.cry;
+  showToast(`+${rw.xp} XP · +${rw.gold} 🪙${rw.cry ? ` · +${rw.cry} 💎` : ''}`, 'gold', `🏆 Босс повержен · ${b.name}`);
+  SFX.evolve();
+  showScene(b.icon || '🏆', 'БОСС ПОВЕРЖЕН!', `${b.name} побеждён — добывайте лут!`);
+  commit();
+  if (res.leveledUp) showLevelUp(res.oldLevel);
+}
+
+/* ---------- АЛХИМИЯ: варим зелья из эссенций 🌿 ---------- */
+function craftRecipe(id) {
+  const r = RECIPES.find((x) => x.id === id);
+  if (!r) return;
+  if (state.herbs < r.cost) {
+    showToast(`Нужно ${r.cost} 🌿 (есть ${state.herbs})`, 'warn', 'Алхимия');
+    return;
+  }
+  state.herbs -= r.cost;
+  state.totals.crafts += 1;
+  SFX.craft();
+
+  if (id === 'focus') {
+    restoreMP(40);
+    showToast('+40 💧 фокуса восстановлено', 'info', r.name);
+  } else if (id === 'xp') {
+    const res = grantXP(100);
+    showToast('+100 ⭐ опыта!', 'success', r.name);
+    if (res.leveledUp) showLevelUp(res.oldLevel);
+  } else if (id === 'chest') {
+    const roll = Math.random();
+    if (roll < 0.6)       { const g = randInt(50, 150); grantGold(g); showToast(`В сундуке: +${g} 🪙`, 'gold', r.name); }
+    else if (roll < 0.85) { state.crystals += 1; showToast('В сундуке: +1 💎!', 'crystal', r.name); }
+    else                  { state.herbs += 15; showToast('В сундуке… ещё травы? +15 🌿', 'info', r.name); }
+  }
+  commit();
+}
+
+/* ---------- ПИТОМЕЦ: растёт от идеальных дней ---------- */
+function petStageIdx() {
+  let idx = 0;
+  PET_STAGES.forEach((st, i) => { if (state.pet.perfectDays >= st.at) idx = i; });
+  return idx;
+}
+/* Вызывается при закрытии всех привычек дня */
+function feedPet() {
+  const before = petStageIdx();
+  state.pet.perfectDays += 1;
+  const after = petStageIdx();
+  if (after > before) {
+    const st = PET_STAGES[after];
+    showToast(`${st.emoji} ${state.pet.name} эволюционировал в ${st.name}!`, 'crystal', 'Эволюция питомца');
+    SFX.evolve();
+    showScene(st.emoji, 'ЭВОЛЮЦИЯ!', `${state.pet.name} стал ${st.name} благодаря вашей дисциплине!`);
+  }
+}
+function renamePet() {
+  const n = prompt('Как зовут питомца?', state.pet.name);
+  if (n && n.trim()) { state.pet.name = n.trim().slice(0, 20); commit(); }
+}
+
+/* ---------- ФОРТУНА ДНЯ: крутится раз в сутки при первом входе ---------- */
+function rollFortune() {
+  const today = todayISO();
+  if (state.fortuneDate === today) return;
+  state.fortuneDate = today;
+  const roll = Math.random();
+  if (roll < CONFIG.fortuneDoubleChance) {
+    state.doubleXPDate = today;                // весь XP за день идёт ×2
+    showToast('Колесо фортуны: весь день опыт идёт ×2! ✨', 'crystal', 'Фортуна дня');
+  } else if (roll < CONFIG.fortuneDoubleChance + CONFIG.fortuneGemChance) {
+    state.crystals += 1;
+    showToast('Фортуна подарила вам +1 💎', 'crystal', 'Фортуна дня');
+  } else {
+    const g = randInt(CONFIG.fortuneGoldMin, CONFIG.fortuneGoldMax);
+    grantGold(g);
+    showToast(`Утренний подарок: +${g} 🪙`, 'gold', 'Фортуна дня');
+  }
+}
+
+/* ---------- ДОСТИЖЕНИЯ: автопроверка после любого действия ----------
+   Вызывается из saveState() — то есть гарантированно после каждой мутации */
+function checkAchievements() {
+  for (const a of ACHIEVEMENTS) {
+    if (state.achievements.includes(a.id)) continue;
+    let ok = false;
+    try { ok = a.check(state); } catch { ok = false; }
+    if (ok) {
+      state.achievements.push(a.id);
+      state.crystals += a.r;
+      showToast(`«${a.t}» · награда +${a.r} 💎`, 'crystal', '🏅 Достижение открыто!');
+      SFX.coin();
+    }
+  }
+}
+
+/* ---------- ПОМОДОРО «Рейд фокуса» ---------- */
+const pomo = { running: false, left: 25 * 60, total: 25 * 60, timer: null, charged: false };
+
+function pomoSetLen(min) {                    // смена длительности сбрасывает рейд
+  pomoPause();
+  pomo.total = min * 60; pomo.left = min * 60; pomo.charged = false;
+  renderPomo();
+}
+function pomoToggle() {
+  if (pomo.running) { pomoPause(); return; }
+  /* Вход в новый рейд стоит фокуса (один раз за сессию) */
+  if (!pomo.charged && pomo.left === pomo.total) {
+    if (!useMP(CONFIG.pomoMPCost)) {
+      showToast(`Для входа в рейд нужно ${CONFIG.pomoMPCost} 💧 фокуса!`, 'warn', 'Рейд фокуса');
+      return;
+    }
+    pomo.charged = true;
+  }
+  pomo.running = true;
+  pomo.timer = setInterval(pomoTick, 1000);
+  renderPomo();
+}
+function pomoPause() { pomo.running = false; clearInterval(pomo.timer); renderPomo(); }
+/* Тихий сброс рейда без тоста (для смены профиля / New Game) */
+function resetPomoSilent() { pomo.left = pomo.total; pomo.charged = false; renderPomo(); }
+function pomoReset() {
+  pomoPause();
+  pomo.left = pomo.total; pomo.charged = false;
+  renderPomo();
+  showToast('Рейд сброшен (уплаченный фокус не возвращается)', 'warn');
+}
+function pomoTick() {
+  pomo.left -= 1;
+  if (pomo.left <= 0) {
+    /* ПОБЕДА В РЕЙДЕ: XP по длительности + эссенции */
+    pomoPause();
+    const xp = CONFIG.pomoXP[pomo.total / 60] || 20;
+    const res = grantXP(xp);
+    state.herbs += CONFIG.pomoHerbs;
+    state.totals.pomodoros += 1;
+    showToast(`+${xp} XP · +${CONFIG.pomoHerbs} 🌿`, 'success', '⚔️ Рейд фокуса пройден!');
+    SFX.levelup();
+    pomo.left = pomo.total; pomo.charged = false;
+    commit();
+    if (res.leveledUp) showLevelUp(res.oldLevel);
+    return;
+  }
+  renderPomoTime();
+}
+function renderPomo() { renderPomoTime(); }
+function renderPomoTime() {
+  const el = $id('pomo-time');
+  if (!el) return;
+  const m = String(Math.floor(pomo.left / 60)).padStart(2, '0');
+  const s = String(pomo.left % 60).padStart(2, '0');
+  el.textContent = `${m}:${s}`;
+  const sec = $id('sec-pomo');
+  if (sec) sec.classList.toggle('running', pomo.running);
+  const st = $id('pomo-status');
+  if (st) st.textContent = pomo.running ? '⚔️ Рейд идёт… не отвлекайся!'
+        : (pomo.charged && pomo.left < pomo.total ? '⏸ На паузе' : 'Готов к рейду');
+}
+
+/* ---------- ТЕМЫ ОФОРМЛЕНИЯ ---------- */
+function applyTheme() {
+  document.body.dataset.theme = state.theme || 'night';
+  const btn = $id('btn-theme');
+  if (btn) {
+    const th = THEMES.find((t) => t.id === state.theme) || THEMES[0];
+    btn.textContent = th.label;
+  }
+}
+function cycleTheme() {
+  const i = THEMES.findIndex((t) => t.id === state.theme);
+  state.theme = THEMES[(i + 1) % THEMES.length].id;
+  applyTheme(); commit();
+}
+
+/* ---------- ПАРАЛЛАКС ФОНА ОТ МЫШИ ----------
+   Все слои с классом .px сдвигаются с разной глубиной (data-depth):
+   небо чуть-чуть, острова сильнее — возникает объём сцены */
+let pxPending = false;
+function initParallax() {
+  const layers = Array.from(document.querySelectorAll('.px'));
+  document.addEventListener('mousemove', (e) => {
+    if (pxPending) return;
+    pxPending = true;
+    requestAnimationFrame(() => {
+      const dx = e.clientX / innerWidth  - 0.5;
+      const dy = e.clientY / innerHeight - 0.5;
+      for (const l of layers) {
+        const d = parseFloat(l.dataset.depth || '0.2');
+        l.style.transform =
+          `translate(${(-dx * 42 * d).toFixed(1)}px, ${(-dy * 28 * d).toFixed(1)}px)`;
+      }
+      pxPending = false;
+    });
+  });
+}
+
+/* ---------- ЛЕПЕСТКИ САКУРЫ (создаются один раз при запуске) ---------- */
+function spawnPetals() {
+  const cont = $id('fx-petals');
+  if (!cont || cont.childElementCount) return;
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('span');
+    p.className = 'petal';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.setProperty('--dur',   (7 + Math.random() * 7).toFixed(1) + 's');
+    p.style.setProperty('--delay', (-Math.random() * 12).toFixed(1) + 's');
+    p.style.setProperty('--sway',  Math.round(Math.random() * 160 - 80) + 'px');
+    cont.appendChild(p);
+  }
+}
+
+/* ---------- ВЕЧЕРНИЕ УВЕДОМЛЕНИЯ БРАУЗЕРА ---------- */
+function toggleNotify() {
+  if (!('Notification' in window)) { showToast('Браузер не поддерживает уведомления', 'warn'); return; }
+  if (!state.notify) {
+    Notification.requestPermission().then((p) => {
+      if (p === 'granted') {
+        state.notify = true;
+        showToast(`Вечерние напоминания включены (с ${CONFIG.notifyHour}:00)`, 'info', '🔔 Уведомления');
+      } else {
+        showToast('Разрешение на уведомления не выдано', 'warn');
+      }
+      commit(); updateDevLabels();
+    });
+  } else {
+    state.notify = false;
+    commit(); updateDevLabels();
+  }
+}
+/* Запускается каждую минуту: вечером напоминает о незакрытых квестах */
+function eveningCheck() {
+  if (!state.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  if (now.getHours() < CONFIG.notifyHour || state.notifiedDate === todayISO()) return;
+  const undone = state.habits.filter((h) => !h.done && h.type === 'task').length;
+  if (undone === 0) return;
+  state.notifiedDate = todayISO();
+  saveState();
+  try { new Notification('LifeRPG ⚔️', { body: `Осталось квестов: ${undone}. Закрой день как герой!` }); } catch {}
+}
+
+/* ---------- ЭКСПОРТ / ИМПОРТ СЕЙВОВ (и Пати с другом) ---------- */
+let importMode = 'mine';   // 'mine' — восстановить свой прогресс, 'friend' — загрузить друга
+
+function exportSave() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `liferpg-${currentProfile}-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Сейв сохранён файлом — отправьте другу!', 'info', 'Экспорт');
+}
+function handleImportFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (importMode === 'friend') {
+        /* Для пати берём только публичную часть чужого профиля */
+        state.friend = { name: data.name || 'Союзник', level: data.level || 1, gold: data.gold || 0 };
+        showToast(`Союзник «${esc(state.friend.name)}» вступил в пати!`, 'success', 'Пати');
+      } else {
+        state = mergeDeep(seedState(), data);   // полное восстановление своего сейва
+        applyTheme();
+        showToast('Сейв загружен, прогресс восстановлен', 'success', 'Импорт');
+      }
+      commit();
+    } catch {
+      showToast('Файл повреждён или это не сейв LifeRPG', 'warn', 'Импорт');
+    }
+  };
+  reader.readAsText(file);
+}
+function clearFriend() { state.friend = null; commit(); showToast('Союзник покинул пати', 'info'); }
+/* Совместный рейд: прочность босса зависит от суммы уровней пати */
+function coopRaid() {
+  const lvlSum = state.level + (state.friend ? state.friend.level : state.level);
+  addBoss('🐲', 'Титан совместного рейда', 100 + lvlSum * 20, daysFromNowISO(3));
+  commit();
+  showToast('Призван совместный рейд-босс! Разбивайте его на подзадачи', 'crystal', '⚔️ Кооп-рейд');
+}
+
+/* ---------- ГОРЯЧИЕ КЛАВИШИ ---------- */
+/*
+  h — привычки · a — академия · g — гильдия · f — финансы ·
+  b — босс · s — лавка · p — помодоро старт/пауза · t — тема · m — звук
+  (не срабатывают, пока вы печатаете в поле ввода)
+*/
+function initHotkeys() {
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+    /* БАГФИКС: пока открыт обязательный выбор класса — блокируем прочие
+       хоткеи, чтобы формы не открывались «под» модалкой. Esc работает. */
+    const classOverlay = $id('overlay-class');
+    if (classOverlay && !classOverlay.classList.contains('hidden')) {
+      if (e.key === 'Escape' && state.class) {
+        pendingClass = null;
+        classOverlay.classList.add('hidden');
+        renderClassGrid();
+      }
+      return;
+    }
+
+    const map = { h: 'form-habits', a: 'form-academy', g: 'form-guild', f: 'form-finance', b: 'form-boss', s: 'form-shop' };
+    if (map[e.key]) { $id(map[e.key]).classList.toggle('hidden'); return; }
+    if (e.key === 'p') { pomoToggle(); return; }
+    if (e.key === 't') { cycleTheme(); return; }
+    if (e.key === 'm') { toggleMute(); return; }
+  });
+}
+
+/* ---------- ЗВУК ВКЛ/ВЫКЛ и подписи служебных кнопок ---------- */
+function toggleMute() {
+  state.muted = !state.muted;
+  commit(); updateDevLabels();
+}
+function updateDevLabels() {
+  const th = THEMES.find((t) => t.id === state.theme) || THEMES[0];
+  const bt = $id('btn-theme');   if (bt) bt.textContent = th.label;
+  const bm = $id('btn-mute');    if (bm) bm.textContent = state.muted ? '🔇 Звук' : '🔊 Звук';
+  const bn = $id('btn-notify');  if (bn) bn.textContent = state.notify ? '🔔 Уведомления: вкл' : '🔕 Уведомления: выкл';
+  refreshProfileSelect();
+}
+
+/* ---------- ПРОФИЛИ: создание / удаление / список ---------- */
+function createProfile() {
+  const name = prompt('Имя нового профиля:');
+  if (!name || !name.trim()) return;
+  const clean = name.trim().slice(0, 20);
+  if (profileList.includes(clean)) { showToast('Такой профиль уже есть', 'warn'); return; }
+  saveState();                       // сохраняем текущий мир перед переключением
+  profileList.push(clean);
+  persistProfiles();
+  switchProfile(clean);              // новый мир создастся из сида автоматически
+}
+function deleteProfile() {
+  if (profileList.length <= 1) { showToast('Нельзя удалить единственный профиль', 'warn'); return; }
+  if (!confirm(`Удалить профиль «${currentProfile}» со всем прогрессом?`)) return;
+  localStorage.removeItem(storageKey());
+  profileList = profileList.filter((p) => p !== currentProfile);
+  currentProfile = profileList[0];
+  persistProfiles();
+  /* БАГФИКС: раньше switchProfile() вызывал saveState() под СТАРЫМ ключом
+     и «воскрешал» только что удалённый сейв. Теперь грузим новый профиль
+     напрямую, без сохранения удалённого. */
+  loadState();
+  applyTheme(); renderAll(); updateDevLabels();
+  showToast(`Профиль удалён. Активен: «${esc(currentProfile)}»`, 'info', 'Мультипрофили');
+}
+function refreshProfileSelect() {
+  const sel = $id('profile-select');
+  if (!sel) return;
+  sel.innerHTML = profileList.map((p) =>
+    `<option value="${esc(p)}" ${p === currentProfile ? 'selected' : ''}>👤 ${esc(p)}</option>`).join('');
+}
+
+/* ================= F. СМЕНА СУТОК =================================== */
+/*
+  Вызывается при загрузке. Если наступил новый день:
+    • каждая невыполненная привычка-«дело» бьёт на −20 HP и сбрасывает стрик;
+    • галочки привычек очищаются — новый день, новые квесты;
+    • ночь немного восстанавливает фокус («сон»);
+    • если HP достигло 0 — экран WASTED со штрафом.
+*/
+function processNewDay(force = false) {
+  const today = todayISO();
+  if (!force && state.lastVisit === today) return;
+
+  let missed = 0;
+  let missedDmg = 0;                            // фактический урон (Танк получает меньше)
+  for (const h of state.habits) {
+    if (!h.done && h.type === 'task') {       // отдых не наказываем
+      missed++;
+      const dmg = Math.round(CONFIG.habitMissHP * clsMod('missDmg', 1));
+      missedDmg += dmg;
+      state.hp -= dmg;
+    }
+    if (!h.done) h.streak = 0;                // стрик живёт, только если выполнял
+    h.done = false;                           // сброс на новый день
+  }
+
+  /* v2: просроченные боссы контратакуют (один раз на каждого) */
+  let bossHits = 0;
+  let bossDmg = 0;
+  for (const b of state.bosses) {
+    if (!b.rewarded && !b.penalized && daysUntil(b.deadline) < 0) {
+      b.penalized = true;
+      bossHits++;
+      const dmg = Math.round(CONFIG.bossPenaltyHP * clsMod('missDmg', 1));
+      bossDmg += dmg;
+      state.hp -= dmg;
+    }
+  }
+
+  /* v2: чистим историю графика старше двух недель */
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 14);
+  for (const k of Object.keys(state.history)) {
+    if (new Date(k + 'T00:00:00') < cutoff) delete state.history[k];
+  }
+
+  state.lastVisit = today;
+  restoreMP(Math.round(CONFIG.sleepMPRecovery * clsMod('rest', 1))); // «сон» (Жрец — ×2)
+
+  rollFortune();                              // v2: фортуна нового дня
+
+  commit();
+
+  if (missed > 0) {
+    showToast(`Пропущено поручений: ${missed} · −${missedDmg} ❤`, 'damage', 'Утренний отчёт');
+  } else if (state.habits.length) {
+    showToast('Все поручения вчера выполнены — стрики целы! 🔥', 'success', 'Утренний отчёт');
+  }
+
+  if (bossHits > 0) {
+    SFX.damage();
+    showToast(`Просроченные боссы атакуют: −${bossDmg} ❤`, 'damage', 'Рейд-боссы');
+  }
+
+  if (state.hp <= 0) { state.hp = 0; gameOver(); }
+}
+
+/* Кнопка «⏩ Новый день» — ручная проверка механики пропусков */
+function simulateNewDay() {
+  state.lastVisit = '1999-12-31';
+  processNewDay(true);
+}
+
+/* ========================= G. РЕНДЕР ================================ */
+
+/* Шапка: имя, титул, полосы, ресурсы */
+function renderHUD() {
+  $id('char-name').textContent = state.name;
+  $id('avatar-btn').textContent = AVATARS[state.avatarIndex % AVATARS.length];
+  $id('char-title').textContent = titleFor(state.level);
+  $id('char-level').textContent = state.level;
+
+  /* Полоса здоровья (пульсирует при HP < 30% от максимума класса) */
+  const maxHP = state.maxHP ?? CONFIG.startHP;
+  const hpPct = Math.max(0, Math.min(100, state.hp / maxHP * 100));
+  $id('hp-text').textContent = `${Math.max(0, state.hp)}/${maxHP}`;
+  const hpFill = $id('hp-bar');
+  hpFill.style.width = hpPct + '%';
+  hpFill.classList.toggle('danger', state.hp < maxHP * 0.3);
+
+  /* Полоса фокуса */
+  const maxMP = state.maxMP ?? CONFIG.startMP;
+  const mpPct = Math.max(0, Math.min(100, state.mp / maxMP * 100));
+  $id('mp-text').textContent = `${Math.max(0, state.mp)}/${maxMP}`;
+  $id('mp-bar').style.width = mpPct + '%';
+
+  /* Полоса опыта: процент внутри текущего уровня */
+  const need = xpNeeded(state.level);
+  $id('xp-text').textContent = `${state.xp}/${need}`;
+  $id('xp-bar').style.width = Math.min(100, state.xp / need * 100) + '%';
+
+  /* Ресурсы */
+  const g = $id('res-gold');
+  g.textContent = fmtMoney(state.gold);
+  g.parentElement.classList.toggle('negative', state.gold < 0);
+  $id('res-cry').textContent = state.crystals;
+  $id('res-int').textContent = state.int + ' INT';
+  $id('shop-gold').textContent = fmtMoney(state.gold);
+
+  /* v2: индикатор дневного баффа «×2 XP» (фортуна) */
+  $id('buff-x2').classList.toggle('hidden', state.doubleXPDate !== todayISO());
+
+  /* v2.1: чип класса в шапке + видимость кнопки «Личный заказ» */
+  const cls = CLASSES[state.class];
+  $id('char-class').textContent = cls ? `${cls.icon} ${cls.name}` : '🎭 Выбрать класс';
+  const bp = $id('btn-personal');
+  if (bp) bp.classList.toggle('hidden', !state.class);
+}
+
+/* Карточки привычек */
+function renderHabits() {
+  const box = $id('list-habits');
+  if (!state.habits.length) {
+    box.innerHTML = '<div class="empty-note">Поручений нет — добавьте первое снизу ↓</div>';
+    return;
+  }
+  box.innerHTML = state.habits.map((h) => {
+    const isRest = h.type === 'rest';
+    const gold = questGold(CONFIG.habitGold);          // с учётом навыка «Тело»
+    const catName = h.cat && SKILL_META[h.cat] ? SKILL_META[h.cat].name : null;
+    const reward = isRest
+      ? `<span class="q-reward">+${CONFIG.restHabitXP}⭐ <span class="m">+${CONFIG.restHabitMP}💧</span></span>`
+      : `<span class="q-reward">+${CONFIG.habitXP}⭐ +${gold}<i class="fa-solid fa-coins"></i></span>`;
+    return `
+      <div class="q-item ${h.done ? 'done' : ''}" data-action="toggle-habit" data-id="${h.id}">
+        <span class="check"></span>
+        <div class="q-body">
+          <span class="q-title">${isRest ? '<i class="fa-solid fa-moon" style="color:var(--mp-blue)"></i> ' : ''}${esc(h.title)}</span>
+          <span class="q-meta">
+            <span class="flame"><i class="fa-solid fa-fire"></i> ${h.streak}</span>
+            <span>${isRest ? 'восстанавливает фокус' : (catName ? `тренирует: ${catName}` : 'ежедневный ритуал')}</span>
+          </span>
+        </div>
+        ${reward}
+        <button class="del-btn" data-action="del-habit" data-id="${h.id}" title="Удалить"><i class="fa-solid fa-trash-can"></i></button>
+      </div>`;
+  }).join('');
+}
+
+/* Квесты Академии */
+function renderAcademy() {
+  const box = $id('list-academy');
+  if (!state.academy.length) {
+    box.innerHTML = '<div class="empty-note">Свитков с заданиями нет</div>';
+    return;
+  }
+  box.innerHTML = state.academy.map((t) => {
+    const cfg = CONFIG.academyDiff[t.diff];
+    const left = daysUntil(t.deadline);
+    const dlCls = left < 0 ? 'dl-over' : (left <= 1 ? 'dl-soon' : '');
+    const dlNote = t.done ? '' : (left < 0 ? 'просрочено!' : left === 0 ? 'сегодня!' : `осталось ${left} дн.`);
+    return `
+      <div class="q-item ${t.done ? 'done' : ''}" data-action="toggle-academy" data-id="${t.id}">
+        <span class="check"></span>
+        <div class="q-body">
+          <span class="q-title">${esc(t.title)}</span>
+          <span class="q-meta">
+            <span class="diff-chip diff-${t.diff}">${cfg.label}</span>
+            ${t.subject ? `<span>${esc(t.subject)}</span>` : ''}
+            <span class="${dlCls}"><i class="fa-regular fa-calendar"></i> ${fmtDate(t.deadline)} ${dlNote}</span>
+          </span>
+        </div>
+        <span class="q-reward">+${Math.round(cfg.xp * wisMult())}⭐ <span class="m">−${cfg.mp}💧</span></span>
+        <button class="del-btn" data-action="del-academy" data-id="${t.id}" title="Удалить"><i class="fa-solid fa-trash-can"></i></button>
+      </div>`;
+  }).join('');
+}
+
+/* Квесты Гильдии */
+function renderGuild() {
+  const box = $id('list-guild');
+  if (!state.guild.length) {
+    box.innerHTML = '<div class="empty-note">Доска объявлений пуста</div>';
+    return;
+  }
+  box.innerHTML = state.guild.map((q) => {
+    const cfg = CONFIG.guildRanks[q.rank];
+    const mult = q.personal ? 1.25 : 1;                // личные заказы щедрее
+    const gold = Math.round(questGold(cfg.gold) * clsGoldM() * mult);
+    const xp   = Math.round(cfg.xp * clsXP() * mult);
+    const extra = cfg.cry ? ` +${cfg.cry}💎` : '';
+    const mpPart = cfg.mp > 0 ? ` <span class="m">−${cfg.mp}💧</span>` : '';
+    /* Бейджи происхождения заказа */
+    const badges =
+      (q.personal ? '<span class="diff-chip" style="color:var(--pastel-pink);border-color:var(--pastel-pink)">🎭 личный ×1.25</span>' : '') +
+      (q.gen      ? '<span class="diff-chip" style="color:#9defc9;border-color:#9defc9">🎲 сгенерирован</span>' : '');
+    return `
+      <div class="q-item ${q.done ? 'done' : ''}" data-action="toggle-guild" data-id="${q.id}">
+        <span class="rank-badge rank-${q.rank}">${q.rank}</span>
+        <div class="q-body">
+          <span class="q-title">${esc(q.title)}</span>
+          <span class="q-meta">${badges}<span>задание гильдии · ранг ${q.rank}</span></span>
+        </div>
+        <span class="q-reward">+${xp}⭐ ${gold}<i class="fa-solid fa-coins"></i>${extra}${mpPart}</span>
+        <button class="del-btn" data-action="del-guild" data-id="${q.id}" title="Удалить"><i class="fa-solid fa-trash-can"></i></button>
+      </div>`;
+  }).join('');
+}
+
+/* Кошелёк: сводка + список операций */
+function renderFinance() {
+  /* Сводка по журналу и общий баланс */
+  const inc = state.finance.filter((f) => f.type === 'income').reduce((s, f) => s + f.amount, 0);
+  const exp = state.finance.filter((f) => f.type === 'expense').reduce((s, f) => s + f.amount, 0);
+  $id('wallet-summary').innerHTML =
+    `<span class="sum-in">Доходы: <b>+${fmtMoney(inc)} 🪙</b></span>
+     <span class="sum-out">Расходы: <b>−${fmtMoney(exp)} 🪙</b></span>
+     <span class="sum-all">Баланс: <b>${fmtMoney(state.gold)} 🪙</b></span>`;
+
+  const box = $id('list-finance');
+  if (!state.finance.length) {
+    box.innerHTML = '<div class="empty-note">Журнал операций пуст</div>';
+    return;
+  }
+  box.innerHTML = state.finance.map((f) => `
+    <div class="q-item" style="cursor:default" data-id="${f.id}">
+      <span class="fin-type ${f.type === 'income' ? 'ft-in' : 'ft-out'}">
+        <i class="fa-solid ${f.type === 'income' ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i>
+        ${f.type === 'income' ? 'ДОХОД' : 'РАСХОД'}
+      </span>
+      <div class="q-body">
+        <span class="q-title">${esc(f.title)}</span>
+        <span class="q-meta">${fmtDate(f.date)}</span>
+      </div>
+      <span class="q-reward ${f.type === 'income' ? 'amt-in' : 'amt-out'}">
+        ${f.type === 'income' ? '+' : '−'}${fmtMoney(f.amount)} 🪙
+      </span>
+      <button class="del-btn" data-action="del-fin" data-id="${f.id}" title="Удалить"><i class="fa-solid fa-trash-can"></i></button>
+    </div>`).join('');
+}
+
+/* Лавка торговца */
+function renderShop() {
+  const box = $id('list-shop');
+  if (!state.shop.length) {
+    box.innerHTML = '<div class="empty-note">Товаров нет — создайте собственную награду ↓</div>';
+    return;
+  }
+  box.innerHTML = state.shop.map((item) => {
+    const price = discountPrice(item.price);           // цена с учётом Харизмы
+    const oldPrice = state.skills.cha > 0
+      ? `<s style="color:var(--text-dim);margin-right:6px">${fmtMoney(item.price)}</s>` : '';
+    return `
+    <div class="shop-card">
+      <button class="del-btn shop-del" data-action="del-shop" data-id="${item.id}" title="Убрать товар"><i class="fa-solid fa-xmark"></i></button>
+      <div class="shop-icon">${esc(item.icon || '🎁')}</div>
+      <div class="shop-name">${esc(item.title)}</div>
+      <div class="shop-price">${oldPrice}<i class="fa-solid fa-coins"></i> ${fmtMoney(price)}</div>
+      <button class="btn btn-buy" data-action="buy-item" data-id="${item.id}"
+        ${state.gold < price ? 'disabled' : ''}>
+        <i class="fa-solid fa-cart-shopping"></i> Купить
+      </button>
+    </div>`;}).join('');
+}
+
+/* ---------- v2: Рейд-боссы ---------- */
+function renderBosses() {
+  const box = $id('list-bosses');
+  if (!box) return;
+  if (!state.bosses.length) {
+    box.innerHTML = '<div class="empty-note">Боссов нет. Призовите большого злодея — и разберите его на подзадачи!</div>';
+    return;
+  }
+  box.innerHTML = state.bosses.map((b) => {
+    const rw = bossReward(b.maxHP);
+    const left = daysUntil(b.deadline);
+    const pct = Math.max(0, b.hp / b.maxHP * 100);
+    const subs = b.subs.map((s) => `
+      <div class="q-item sub ${s.done ? 'done' : ''}" data-action="toggle-sub" data-boss="${b.id}" data-id="${s.id}">
+        <span class="check"></span>
+        <div class="q-body"><span class="q-title" style="font-size:13.5px">${esc(s.title)}</span></div>
+        <span class="dmg-chip"><i class="fa-solid fa-gavel"></i> −${s.dmg}</span>
+      </div>`).join('');
+    return `
+      <div class="boss-card ${b.rewarded ? 'defeated' : ''}">
+        <button class="del-btn" style="position:absolute;top:10px;right:10px" data-action="del-boss" data-id="${b.id}" title="Удалить босса"><i class="fa-solid fa-trash-can"></i></button>
+        ${b.rewarded ? '<div class="ribbon">ПОБЕЖДЁН</div>' : ''}
+        <div class="boss-head">
+          <span class="boss-icon">${esc(b.icon || '👹')}</span>
+          <div class="q-body">
+            <span class="q-title">${esc(b.name)}</span>
+            <span class="q-meta">
+              <span class="${left < 0 ? 'dl-over' : (left <= 1 ? 'dl-soon' : '')}">
+                <i class="fa-regular fa-calendar"></i> ${fmtDate(b.deadline)}${b.penalized ? ' · уже атаковал' : ''}
+              </span>
+              <span class="q-reward">лут: ${rw.gold}🪙 · ${rw.xp}⭐${rw.cry ? ` · ${rw.cry}💎` : ''}</span>
+            </span>
+          </div>
+          <span class="boss-hpnum">${b.hp} / ${b.maxHP} ❤</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill fill-boss" style="width:${pct}%"></div></div>
+        <div class="boss-subs">${subs || '<div class="empty-note" style="padding:8px">Добавьте подзадачи — они наносят урон</div>'}</div>
+        <form class="sub-add js-subform" data-boss="${b.id}">
+          <input type="text" class="si-title" placeholder="Подзадача (удар по боссу)…" required>
+          <input type="number" class="si-dmg" value="25" min="1" max="500" title="Урон в HP">
+          <button class="btn-mini" type="submit">⚡ Ударить</button>
+        </form>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- v2: Древо навыков ---------- */
+function renderSkills() {
+  const box = $id('list-skills');
+  if (!box) return;
+  $id('skill-points').textContent = `${state.statPoints} очк.`;
+  box.innerHTML = Object.keys(SKILL_META).map((key) => {
+    const m = SKILL_META[key];
+    const lvl = state.skills[key];
+    const trainLeft = CONFIG.trainPerPoint - (state.train[key] % CONFIG.trainPerPoint);
+    return `
+      <div class="skill-row">
+        <i class="fa-solid ${m.icon}" style="color:var(--acc);font-size:17px;width:22px;text-align:center"></i>
+        <div class="skill-info">
+          <div class="skill-name">${m.name} · ур. ${lvl}</div>
+          <div class="skill-desc">${m.desc}<br>До +1 от тренировок: ещё ${trainLeft}</div>
+        </div>
+        <button class="btn-mini" data-action="learn-skill" data-skill="${key}"
+          ${state.statPoints < 1 ? 'disabled' : ''} title="Потратить очко навыка">+1</button>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- v2: Питомец ---------- */
+function renderPet() {
+  const stIdx = petStageIdx();
+  const st = PET_STAGES[stIdx];
+  const next = PET_STAGES[stIdx + 1];
+  $id('pet-emoji').textContent = st.emoji;
+  $id('pet-name').textContent = `${state.pet.name} · ${st.name}`;
+  const pct = next
+    ? Math.min(100, (state.pet.perfectDays - st.at) / (next.at - st.at) * 100)
+    : 100;
+  $id('pet-bar').style.width = pct + '%';
+  $id('pet-text').innerHTML = next
+    ? `Идеальных дней: <b>${state.pet.perfectDays}</b> · до эволюции ещё ${Math.max(0, next.at - state.pet.perfectDays)}`
+    : `МАКСИМАЛЬНАЯ ФОРМА · идеальных дней: <b>${state.pet.perfectDays}</b>`;
+}
+
+/* ---------- v2: Алхимия ---------- */
+function renderAlchemy() {
+  $id('alch-herbs').innerHTML =
+    `Эссенции: <b>${state.herbs} 🌿</b> <span style="color:var(--text-dim)">· падают с квестов (шанс ${Math.round(CONFIG.herbChance * 100)}%)</span>`;
+  $id('list-alchemy').innerHTML = RECIPES.map((r) => `
+    <div class="alch-row">
+      <span class="alch-icon">${r.icon}</span>
+      <div class="skill-info">
+        <div class="skill-name" style="font-size:14px">${r.name}</div>
+        <div class="skill-desc">${r.desc} · цена: ${r.cost} 🌿</div>
+      </div>
+      <button class="btn-mini" data-action="craft" data-id="${r.id}"
+        ${state.herbs < r.cost ? 'disabled' : ''}>Сварить</button>
+    </div>`).join('');
+}
+
+/* ---------- v2: Достижения ---------- */
+function renderAch() {
+  $id('list-ach').innerHTML = ACHIEVEMENTS.map((a) => `
+    <div class="ach ${state.achievements.includes(a.id) ? 'on' : ''}" title="${esc(a.d)}">
+      <i class="fa-solid ${a.icon}"></i>
+      <div class="ach-t">${a.t}</div>
+      <div class="ach-d">${a.d}</div>
+      <div class="ach-r">+${a.r} 💎</div>
+    </div>`).join('');
+}
+
+/* ---------- v2: Пати ---------- */
+function renderParty() {
+  $id('party-me').innerHTML = `
+    <div style="font-size:34px">${AVATARS[state.avatarIndex % AVATARS.length]}</div>
+    <div class="skill-name">${esc(state.name)}</div>
+    <div class="skill-desc">ур. ${state.level} · ${titleFor(state.level)}<br>${fmtMoney(state.gold)} 🪙 · 💎 ${state.crystals}</div>`;
+  const f = state.friend;
+  $id('party-friend').innerHTML = f
+    ? `<div style="font-size:34px">🤝</div>
+       <div class="skill-name">${esc(f.name)}</div>
+       <div class="skill-desc">ур. ${f.level}<br>${fmtMoney(f.gold)} 🪙</div>`
+    : '<div class="empty-note">Друг ещё не в пати.<br>Пусть пришлёт файл своего сейва!</div>';
+}
+
+/* ---------- v2: График «Хроника недели» (чистый canvas) ---------- */
+function drawWeek() {
+  const cv = $id('week-canvas');
+  if (!cv || !cv.getContext) return;               // защита для тестов/старых браузеров
+  const ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx) return;
+
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  const labels = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+
+  /* Собираем последние 7 дней из state.history */
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    days.push({ label: labels[d.getDay()], v: state.history[iso] || 0, today: i === 0 });
+  }
+  const max = Math.max(50, ...days.map((d) => d.v));
+  const padX = 26, padTop = 28, padBot = 28;
+  const slot = (W - padX * 2) / 7;
+  const bw = slot - 16;
+
+  days.forEach((d, i) => {
+    const x = padX + i * slot + 8;
+    const h = (d.v / max) * (H - padTop - padBot);
+    const y = H - padBot - h;
+    const grad = ctx.createLinearGradient(0, y, 0, H - padBot);
+    grad.addColorStop(0, '#ffd97a'); grad.addColorStop(1, '#c98bff');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, bw, Math.max(h, 3), 7); else ctx.rect(x, y, bw, Math.max(h, 3));
+    ctx.fill();
+    if (d.today) { ctx.strokeStyle = '#5ad1ff'; ctx.lineWidth = 2; ctx.stroke(); }
+    ctx.fillStyle = '#b9b3d9'; ctx.font = '12px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(d.label, x + bw / 2, H - 9);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(d.v || '', x + bw / 2, y - 8);
+  });
+}
+
+function renderAll() {
+  renderHUD();
+  renderHabits();
+  renderAcademy();
+  renderGuild();
+  renderFinance();
+  renderShop();
+  renderBosses();
+  renderSkills();
+  renderPet();
+  renderAlchemy();
+  renderPomo();
+  renderAch();
+  renderParty();
+  drawWeek();
+  refreshProfileSelect();
+}
+
+/* ==================== H. TOASTS И МОДАЛКИ =========================== */
+
+/* Типы тостов: цвет рамки + иконка FontAwesome */
+const TOAST_STYLE = {
+  success: { c: '#58e07f', icon: 'fa-circle-check' },
+  gold:    { c: '#ffcf5c', icon: 'fa-coins' },
+  damage:  { c: '#ff5d7d', icon: 'fa-heart-crack' },
+  warn:    { c: '#ffe08a', icon: 'fa-triangle-exclamation' },
+  info:    { c: '#5ad1ff', icon: 'fa-circle-info' },
+  crystal: { c: '#c98bff', icon: 'fa-gem' },
+};
+
+function showToast(message, type = 'info', title = '') {
+  const st = TOAST_STYLE[type] || TOAST_STYLE.info;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.setProperty('--tc', st.c);
+  el.innerHTML =
+    `<i class="fa-solid ${st.icon}"></i>
+     <div>${title ? `<div class="toast-title">${esc(title)}</div>` : ''}
+         <div class="toast-msg">${message}</div></div>`;
+  $id('toast-container').appendChild(el);
+  setTimeout(() => {
+    el.classList.add('toast-out');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }, 3400);
+}
+
+/* Модалка LEVEL UP: конфетти, лучи, звук, цитата, смена титула */
+function showLevelUp(oldLevel) {
+  SFX.levelup();
+  $id('lu-level').textContent = state.level;
+
+  /* Если открыт новый титул — показываем плашку */
+  const newT = titleFor(state.level), oldT = titleFor(oldLevel);
+  const chip = $id('lu-newtitle');
+  if (newT !== oldT) {
+    chip.textContent = `🏅 Новый титул: ${newT}`;
+    chip.classList.remove('hidden');
+  } else {
+    chip.classList.add('hidden');
+  }
+
+  $id('lu-quote').textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+  /* Генерация конфетти: 30 цветных «ленточек» со случайными параметрами */
+  const cont = $id('lu-confetti');
+  cont.innerHTML = '';
+  const colors = ['#ffcf5c', '#c98bff', '#5ad1ff', '#ff9de2', '#58e07f'];
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement('span');
+    s.style.left = Math.random() * 100 + '%';
+    s.style.background = colors[i % colors.length];
+    s.style.setProperty('--dur', (2 + Math.random() * 2.4) + 's');
+    s.style.setProperty('--delay', (Math.random() * 1.2) + 's');
+    cont.appendChild(s);
+  }
+
+  $id('overlay-levelup').classList.remove('hidden');
+}
+
+/* v2: полноэкранная «CG-сцена» для больших событий (босс, эволюция) */
+function showScene(emoji, title, sub) {
+  $id('scene-emoji').textContent = emoji;
+  $id('scene-title').textContent = title;
+  $id('scene-sub').textContent = sub;
+  const card = document.querySelector('#overlay-scene .scene-emoji');
+  if (card) {                                   // перезапуск анимации появления
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = '';
+  }
+  $id('overlay-scene').classList.remove('hidden');
+}
+
+/* ================= I. СОБЫТИЯ И ЗАПУСК ============================== */
+
+function bindEvents() {
+
+  /* --- Один делегированный обработчик на всё приложение ---
+     Ловим клики по data-action (чекбоксы квестов, кнопки ✕, покупки,
+     открытие форм) — надёжно и без утечек памяти. */
+  document.querySelector('.app').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const { action, id, target, boss, skill } = btn.dataset;
+
+    switch (action) {
+      case 'open-form':
+        $id(target).classList.toggle('hidden');
+        break;
+
+      /* ---------- v2: древо навыков ---------- */
+      case 'learn-skill': {
+        if (state.skills[skill] !== undefined && state.statPoints >= 1) {
+          state.statPoints -= 1;
+          state.skills[skill] += 1;
+          showToast(`Навык «${SKILL_META[skill].name}» повышен до ${state.skills[skill]}!`, 'success', '⭐ Древо навыков');
+          SFX.craft();
+        }
+        commit();
+        break;
+      }
+
+      /* ---------- v2: алхимия / боссы ---------- */
+      case 'craft': craftRecipe(id); break;
+      case 'toggle-sub': toggleSub(boss, id); break;
+      case 'del-boss':
+        state.bosses = state.bosses.filter((x) => x.id !== id);
+        commit();
+        break;
+
+      /* ---------- v2: помодоро / питомец ---------- */
+      case 'pomo-toggle': pomoToggle(); break;
+      case 'pomo-reset': pomoReset(); break;
+      case 'rename-pet': renamePet(); break;
+
+      /* ---------- v2: пати и сейвы ---------- */
+      case 'export-save': exportSave(); break;
+      case 'import-mine':
+        importMode = 'mine';
+        $id('file-import').click();
+        break;
+      case 'import-friend':
+        importMode = 'friend';
+        $id('file-import').click();
+        break;
+      case 'clear-friend': clearFriend(); break;
+      case 'coop-raid': coopRaid(); break;
+
+      /* ---------- v2.2: генератор заказов гильдии ---------- */
+      case 'gen-quest':    genQuest(false); break;
+      case 'gen-personal': genQuest(true);  break;
+
+      /* ---------- v2.1: классы (выбор → подтверждение) ---------- */
+      case 'open-class-picker': showClassPicker(); break;
+      case 'choose-class':
+        pendingClass = id;                // только подсветка карточки
+        renderClassGrid();
+        break;
+
+      case 'toggle-habit': {
+        const h = state.habits.find((x) => x.id === id);
+        if (h) toggleHabit(h);
+        break;
+      }
+      case 'del-habit':
+        state.habits = state.habits.filter((x) => x.id !== id);
+        commit();
+        break;
+
+      case 'toggle-academy': {
+        const t = state.academy.find((x) => x.id === id);
+        if (t) toggleAcademy(t);
+        break;
+      }
+      case 'del-academy':
+        state.academy = state.academy.filter((x) => x.id !== id);
+        commit();
+        break;
+
+      case 'toggle-guild': {
+        const q = state.guild.find((x) => x.id === id);
+        if (q) toggleGuild(q);
+        break;
+      }
+      case 'del-guild':
+        state.guild = state.guild.filter((x) => x.id !== id);
+        commit();
+        break;
+
+      case 'del-fin':   deleteFinance(id); break;
+
+      case 'buy-item': {
+        const item = state.shop.find((x) => x.id === id);
+        if (item) buyReward(item);
+        break;
+      }
+      case 'del-shop':
+        state.shop = state.shop.filter((x) => x.id !== id);
+        commit();
+        break;
+    }
+  });
+
+  /* ---------- Формы добавления квестов ---------- */
+
+  $id('form-habits').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = $id('h-input').value.trim();
+    if (!title) return;
+    const type = $id('h-type').value;
+    const cat  = type === 'rest' ? null : $id('h-cat').value; // отдых не тренирует навыки
+    state.habits.push({ id: uid(), title, type, cat, done: false, streak: 0, lastDone: null });
+    e.target.reset(); e.target.classList.add('hidden');
+    commit();
+    showToast('Новый квест взят!', 'info', 'Ежедневные поручения');
+  });
+
+  $id('form-academy').addEventListener('submit', (e) => {
+    e.preventDefault();
+    state.academy.push({
+      id: uid(),
+      title: $id('a-title').value.trim(),
+      subject: $id('a-subject').value.trim(),
+      diff: $id('a-diff').value,
+      deadline: $id('a-deadline').value || daysFromNowISO(7),
+      done: false,
+    });
+    e.target.reset(); e.target.classList.add('hidden');
+    $id('a-deadline').value = daysFromNowISO(7); // удобный дефолт
+    saveState(); renderAll();
+  });
+
+  $id('form-guild').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = $id('g-title').value.trim();
+    if (!title) return;
+    state.guild.push({ id: uid(), title, rank: $id('g-rank').value, done: false });
+    e.target.reset(); e.target.classList.add('hidden');
+    saveState(); renderAll();
+  });
+
+  $id('form-finance').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = parseInt($id('f-amount').value, 10);
+    const title = $id('f-title').value.trim();
+    if (!title || !amount || amount <= 0) return;
+    addFinance($id('f-type').value, title, amount);
+    e.target.reset(); e.target.classList.add('hidden');
+  });
+
+  $id('form-shop').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = $id('s-title').value.trim();
+    const price = parseInt($id('s-price').value, 10);
+    if (!title || !price || price <= 0) return;
+    state.shop.push({ id: uid(), icon: $id('s-icon').value.trim() || '🎁', title, price });
+    e.target.reset(); e.target.classList.add('hidden');
+    commit();
+    showToast('Товар выставлен на витрину!', 'info', 'Лавка Торговца');
+  });
+
+  /* ---------- v2: форма призыва босса ---------- */
+  $id('form-boss').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $id('b-name').value.trim();
+    if (!name) return;
+    const hp = Math.min(999, Math.max(50, parseInt($id('b-hp').value, 10) || 100));
+    addBoss($id('b-icon').value.trim(), name, hp, $id('b-deadline').value || daysFromNowISO(7));
+    e.target.reset(); e.target.classList.add('hidden');
+    $id('b-deadline').value = daysFromNowISO(7);
+    commit();
+    showToast('Босс призван! Добавьте подзадачи — это ваши удары', 'crystal', '⚔️ Рейд-босс');
+  });
+
+  /* v2: подформы подзадач боссов (делегированно — боссы динамические) */
+  document.querySelector('.app').addEventListener('submit', (e) => {
+    const f = e.target.closest('.js-subform');
+    if (!f) return;
+    e.preventDefault();
+    const b = state.bosses.find((x) => x.id === f.dataset.boss);
+    if (!b || b.rewarded) return;
+    const title = f.querySelector('.si-title').value.trim();
+    if (!title) return;
+    const dmg = Math.max(1, Math.min(999, parseInt(f.querySelector('.si-dmg').value, 10) || 25));
+    b.subs.push({ id: uid(), title, dmg, done: false });
+    commit();
+  });
+
+  /* v2: выбор файла сейва (свой / друга — режим в importMode) */
+  $id('file-import').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) handleImportFile(file);
+    e.target.value = '';   // сброс, чтобы можно было выбрать тот же файл снова
+  });
+
+  /* ---------- Панель персонажа ---------- */
+
+  /* Переименование героя */
+  $id('char-name').addEventListener('click', () => {
+    const name = prompt('Имя вашего героя:', state.name);
+    if (name && name.trim()) {
+      state.name = name.trim().slice(0, 24);
+      saveState(); renderAll();
+    }
+  });
+
+  /* Смена аватара-заглушки */
+  $id('avatar-btn').addEventListener('click', () => {
+    state.avatarIndex = (state.avatarIndex + 1) % AVATARS.length;
+    saveState(); renderAll();
+  });
+
+  /* ---------- Модалки ---------- */
+
+  $id('lu-continue').addEventListener('click', () =>
+    $id('overlay-levelup').classList.add('hidden'));
+  $id('overlay-levelup').addEventListener('click', (e) => {
+    if (e.target === $id('overlay-levelup')) $id('overlay-levelup').classList.add('hidden');
+  });
+
+  $id('w-respawn').addEventListener('click', () =>
+    $id('overlay-wasted').classList.add('hidden'));
+
+  /* ---------- v2: CG-сцена ---------- */
+  $id('scene-continue').addEventListener('click', () =>
+    $id('overlay-scene').classList.add('hidden'));
+  $id('overlay-scene').addEventListener('click', (e) => {
+    if (e.target === $id('overlay-scene')) $id('overlay-scene').classList.add('hidden');
+  });
+
+  /* ---------- v2.1: подтверждение / отмена выбора класса ---------- */
+  $id('class-confirm').addEventListener('click', () => {
+    const key = pendingClass;
+    pendingClass = null;
+    if (key) pickClass(key);                   // применит и закроет окно
+    else renderClassGrid();
+  });
+  $id('class-cancel').addEventListener('click', () => {
+    pendingClass = null;
+    $id('overlay-class').classList.add('hidden');
+    renderClassGrid();
+  });
+  /* Клик по тёмному фону закрывает окно только если класс уже выбран */
+  $id('overlay-class').addEventListener('click', (e) => {
+    if (e.target === $id('overlay-class') && state.class) {
+      pendingClass = null;
+      $id('overlay-class').classList.add('hidden');
+      renderClassGrid();
+      return;
+    }
+
+    /* ВАЖНО: модалка лежит ВНЕ контейнера .app, поэтому общий
+       делегированный обработчик её не слышит — вешаем свой прямо здесь.
+       Клик по карточке = предварительный выбор (подсветка + активация
+       кнопки «Подтвердить»); применение — только по кнопке. */
+    const card = e.target.closest('[data-action="choose-class"]');
+    if (card) {
+      pendingClass = card.dataset.id;
+      renderClassGrid();
+    }
+  });
+
+  /* ---------- v2: настройки и служебные кнопки ---------- */
+  $id('btn-theme').addEventListener('click', cycleTheme);
+  $id('btn-mute').addEventListener('click', toggleMute);
+  $id('btn-notify').addEventListener('click', toggleNotify);
+  $id('btn-export').addEventListener('click', exportSave);
+  $id('profile-select').addEventListener('change', (e) => switchProfile(e.target.value));
+  $id('btn-create-profile').addEventListener('click', createProfile);
+  $id('btn-delete-profile').addEventListener('click', deleteProfile);
+
+  /* v2: смена длительности помодоро */
+  $id('pomo-len').addEventListener('change', (e) => pomoSetLen(parseInt(e.target.value, 10)));
+
+  /* ---------- Служебные кнопки (для теста механик) ---------- */
+
+  $id('dev-xp').addEventListener('click', () => {
+    const r = grantXP(50);
+    saveState(); renderAll();
+    if (r.leveledUp) showLevelUp(r.oldLevel);
+  });
+  $id('dev-gold').addEventListener('click', () => { grantGold(100); saveState(); renderAll(); });
+  $id('dev-cry').addEventListener('click', () => {
+    state.crystals += 1; saveState(); renderAll();
+    showToast('+1 💎', 'crystal', 'Чит-кнопка');
+  });
+  $id('btn-simulate-day').addEventListener('click', simulateNewDay);
+
+  $id('btn-reset').addEventListener('click', () => {
+    if (confirm(`Начать новую игру в профиле «${currentProfile}»? Прогресс профиля будет удалён.`)) {
+      localStorage.removeItem(storageKey());
+      loadState();
+      pomoPause(); resetPomoSilent();            // v2.2: сбросить и таймер рейда
+      pendingClass = null;
+      $id('overlay-class').classList.add('hidden');
+      applyTheme();
+      renderAll();
+      updateDevLabels();
+      if (!state.class) showClassPicker();       // новый герой без класса — выбор
+      showToast('Новая история начинается!', 'info', 'New Game+');
+    }
+  });
+}
+
+/* Точка входа */
+function init() {
+  loadProfiles();                               // v2: мультипрофили
+  loadState();
+  processNewDay();                              // штрафы пропусков, боссы, фортуна
+  $id('a-deadline').value = daysFromNowISO(7);  // дефолтная дата в форме учёбы
+  $id('b-deadline').value = daysFromNowISO(7);  // дефолтная дата в форме босса
+  applyTheme();
+  bindEvents();
+  initHotkeys();                                // v2: горячие клавиши
+  initParallax();                               // v2: параллакс слоёв пейзажа
+  spawnPetals();                                // v2: лепестки для темы «Сакура»
+  renderAll();
+  updateDevLabels();
+  if (!state.class) showClassPicker();          // v2.1: первый вход — выбор класса
+  setInterval(eveningCheck, 60000);             // v2: проверка напоминаний раз в минуту
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

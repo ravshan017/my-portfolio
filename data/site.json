@@ -1,0 +1,41 @@
+{
+  "nameRu": "Бурнашев Равшан",
+  "nameLat": "Burnashev Ravshan",
+  "initials": "РБ",
+  "email": "hello@example.com",
+  "url": "http://localhost:3000",
+  "socials": [
+    {
+      "id": "telegram",
+      "label": "Telegram",
+      "handle": "@ravshanito",
+      "url": "https://t.me/ravshanito",
+      "kind": "pro"
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram",
+      "handle": "@burnashev.rb",
+      "url": "#",
+      "kind": "pro"
+    },
+    {
+      "id": "youtube",
+      "label": "YouTube",
+      "handle": "@burnashev_rb",
+      "url": "#",
+      "kind": "creative"
+    }
+  ],
+  "skills": [
+    "TypeScript",
+    "React",
+    "Next.js",
+    "Node.js",
+    "Three.js",
+    "Tailwind CSS",
+    "Python",
+    "Git",
+    "Figma"
+  ]
+}

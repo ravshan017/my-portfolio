@@ -1,0 +1,26 @@
+[
+  {
+    "id": "aurum-motors",
+    "category": "site",
+    "placeholder": false,
+    "title": "AURUM MOTORS — сайт премиального автосалона",
+    "description": "Многостраничный демо-сайт шоурума Mercedes-Benz: каталог с поиском и фильтрами, сравнение моделей, избранное, кредитный калькулятор и интерактивная 3D-сцена на Three.js.",
+    "stack": ["HTML", "CSS", "JavaScript", "Three.js"],
+    "image": "/images/project-aurum.jpg",
+    "demoUrl": "/projects/aurum-motors/index.html",
+    "codeUrl": "#",
+    "year": "2026"
+  },
+  {
+    "id": "liferpg-isekai",
+    "category": "app",
+    "placeholder": false,
+    "title": "LifeRPG — Исекай моей жизни",
+    "description": "Геймифицированный трекер привычек, учёбы и финансов в эстетике аниме-RPG: уровни и опыт, рейд-боссы, древо навыков, питомец, помодоро-рейды и магазин наград. Чистый JavaScript, прогресс хранится в localStorage.",
+    "stack": ["JavaScript", "LocalStorage", "Canvas API", "Glassmorphism UI"],
+    "image": null,
+    "demoUrl": "/projects/liferpg/",
+    "codeUrl": "#",
+    "year": "2026"
+  }
+]

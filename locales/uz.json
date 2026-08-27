@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "Burnashev Ravshan — veb-sayt va ilovalar ishlab chiquvchisi",
+    "description": "Dasturchi Burnashev Ravshan portfoliysi: saytlar va ilovalar, loyihalar, texnologiyalar to‘plami. NamDTU bitiruvchisi, \"Axborot tizimlari va texnologiyalari\"."
+  },
+  "nav": {
+    "about": "Men haqimda",
+    "projects": "Loyihalar",
+    "experience": "Tajriba",
+    "blog": "Blog",
+    "media": "Kanallar",
+    "contact": "Aloqa",
+    "menu": "Menyu",
+    "close": "Yopish",
+    "langSwitch": "Tilni almashtirish"
+  },
+  "preloader": {
+    "label": "SAHNA YIĞILMOQDA",
+    "hint": "zarralar → monogramma",
+    "kana": "起動中"
+  },
+  "hero": {
+    "label": "// PORTFOLIO — 2026",
+    "kana": "ポートフォリオ",
+    "nameTop": "Burnashev",
+    "nameBottom": "Ravshan",
+    "role": "Veb-sayt va ilovalar ishlab chiquvchi",
+    "pitch": "NamDTU bitiruv kursi, \"Axborot tizimlari va texnologiyalari\". Sayt va ilovalarni birinchi eskizdan productiongacha loyihalayman va quraman.",
+    "ctaProjects": "Loyihalarni ko‘rish",
+    "ctaContact": "Bog‘lanish",
+    "scrollHint": "pastga suring",
+    "sceneAlt": "3D-sahna: minglab kod zarralari chip ramkasi ichida yorug‘ \"RB\" monogrammasiga yig‘ilmoqda",
+    "annoSide": "MASSHTAB 1:1 // OBYEKT \"RB-01\""
+  },
+  "about": {
+    "fig": "FIG. 01",
+    "tag": "AVTOPORTRET",
+    "kana": "私について",
+    "title": "Men haqimda",
+    "lead": "Namangandan dasturchi. Sayt va ilovalarni to‘liq tsiklda qilaman: interfeys, mantiq, deploy. NamDTUning bitiruv kursida o‘qiyman va ayni paytda real loyihalar yig‘aman.",
+    "factsLabel": "PASPORT // FAKTLAR",
+    "facts": {
+      "university": { "label": "Universitet", "value": "NamDTU — Namangan davlat texnika universiteti" },
+      "faculty": { "label": "Fakultet", "value": "Muhandislik va axborot texnologiyalari" },
+      "specialty": { "label": "Mutaxassislik", "value": "Axborot tizimlari va texnologiyalari" },
+      "course": { "label": "Kurs", "value": "4 — bitiruv" },
+      "languages": { "label": "Tillar", "value": "Rus tili / O‘zbek tili" }
+    },
+    "skillsLabel": "INSTRUMENTLAR // STEK",
+    "photoCaption": "Бурнашев Равшан // разработчик"
+  },
+  "projects": {
+    "fig": "FIG. 02",
+    "tag": "YIĞIMALAR ARXIVI",
+    "kana": "プロジェクト",
+    "title": "Loyihalar",
+    "subtitle": "Har bir ish — detallardan yig‘ilgan konstruksiya. Turiga qarab filtrlash mumkin:",
+    "filters": {
+      "all": "Hammasi",
+      "site": "Saytlar",
+      "app": "Ilovalar",
+      "study": "O‘quv"
+    },
+    "demo": "Demo",
+    "code": "Kod",
+    "demoTodo": "Havolani data/projects.json ga qo‘shing",
+    "placeholderBadge": "TAYYOR NAMUNA // ALMASHTIRING",
+    "empty": "Hozircha bo‘sh. Yangi loyiha bitta fayl bilan qo‘shiladi — README ga qarang.",
+    "add": {
+      "button": "+ Loyiha",
+      "title": "Yangi loyiha",
+      "name": "Nomi",
+      "namePlaceholder": "Masalan, Mening startapim",
+      "category": "Turi",
+      "description": "Tavsif",
+      "descriptionPlaceholder": "Loyiha haqida bir necha gap…",
+      "stack": "Stek (vergul bilan)",
+      "stackPlaceholder": "Next.js, TypeScript, PostgreSQL",
+      "image": "Rasm (URL, ixtiyoriy)",
+      "imagePlaceholder": "https://…/cover.png",
+      "demo": "Demo havolasi",
+      "code": "Kod havolasi",
+      "year": "Yil",
+      "yearPlaceholder": "2026",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish",
+      "saved": "Qo‘shildi! Faqat shu brauzerda ko‘rinadi."
+    }
+  },
+  "experience": {
+    "fig": "FIG. 05",
+    "tag": "TRAJEKTORIYA",
+    "kana": "軌跡",
+    "title": "Tajriba va yo‘l",
+    "subtitle": "O‘qish, loyihalar va bosqichlar — yillar bo‘yicha.",
+    "timelineTitle": "Xronika",
+    "reviewsTitle": "Fikr-mulohazalar",
+    "emptyTimeline": "Hozircha bo‘sh — data/experience.ts ga bosqichlar qo‘shing"
+  },
+  "blog": {
+    "fig": "FIG. 06",
+    "tag": "JURNAL",
+    "kana": "日記",
+    "title": "Blog",
+    "subtitle": "Dasturlash, o‘qish va kod ichidagi anime-estetika haqida eslatmalar.",
+    "readMore": "O‘qish",
+    "back": "Blogga",
+    "empty": "Hozircha postlar yo‘q.",
+    "minRead": "daq o‘qish"
+  },
+  "media": {
+    "fig": "FIG. 03",
+    "tag": "TASHQI KONTUR",
+    "kana": "メディア",
+    "title": "Media va kanallar",
+    "subtitle": "Ishlanmalarim, qisqa eslatmalar va jarayonlarni e'lon qiladigan joylarim.",
+    "creativeBadge": "ijodiy loyiha",
+    "visit": "Kanalni ochish",
+    "cards": {
+      "telegram": {
+        "name": "Telegram kanal",
+        "desc": "Asosiy lenta: loyihalar yangiliklari, dasturlash bo‘yicha qisqa eslatmalar, kod va topilmalar."
+      },
+      "instagram": {
+        "name": "Instagram",
+        "desc": "Sahnalar orti: ish onlari, muharrir ekrani va talaba-dasturchi hayoti."
+      },
+      "youtube": {
+        "name": "YouTube",
+        "desc": "Video format: tahlillar, qo‘llanmalar va dasturlashga emas, ijodga oid materiallar."
+      }
+    }
+  },
+  "contact": {
+    "fig": "FIG. 04",
+    "tag": "ALOQA KANALI",
+    "kana": "連絡",
+    "title": "Bog‘lanish",
+    "subtitle": "G‘oya yoki vazifa bor — yozing. Rus va o‘zbek tillarida javob beraman.",
+    "availability": "Buyurtma va stajirovkalarga ochiqman",
+    "directTitle": "To‘g‘ridan-to‘g‘ri",
+    "form": {
+      "name": "Ism",
+      "namePlaceholder": "Sizni qanday atash mumkin",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "message": "Xabar",
+      "messagePlaceholder": "Vazifa haqida bir-ikki gap…",
+      "submit": "Xabar yuborish",
+      "sending": "Yuborilmoqda…",
+      "success": "Yuborildi! Tez orada javob beraman.",
+      "error": "Yuborilmadi. Yana urinib ko‘ring yoki to‘g‘ridan-to‘g‘ri yozing:"
+    },
+    "errors": {
+      "required": "Majburiy maydon",
+      "nameMin": "Kamida 2 belgi",
+      "email": "Email da xato bor ko‘rinadi",
+      "messageMin": "Kamida 10 belgi"
+    },
+    "cv": "Rezume yuklash (PDF)",
+    "cvNote": "Aktual bir sahifali CV"
+  },
+  "footer": {
+    "rights": "Barcha huquqlar himoyalangan",
+    "madeWith": "loyihalangan va qo‘lda yig‘ilgan",
+    "top": "Yuqoriga"
+  },
+  "konami": {
+    "toast": "Otaku rejim faol — 12 soniya sof anime"
+  },
+  "notFound": {
+    "kana": "異世界",
+    "title": "404",
+    "line": "Bu sahifa boshqa olamga ketib qoldi.",
+    "hint": "Sehrli doira uni ushlab turolmadi. Lekin sen qaytishing mumkin.",
+    "back": "Bosh sahifaga qaytish"
+  },
+  "a11y": {
+    "skipToContent": "Kontentga o‘tish",
+    "canvasHidden": "Dekorativ 3D-sahna ekran o‘quvchilar uchun yashirilgan; barcha ma'lumot matn shaklida quyida mavjud."
+  }
+}

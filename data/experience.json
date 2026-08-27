@@ -1,0 +1,86 @@
+{
+  "timeline": [
+    {
+      "id": "t-2022",
+      "year": "2022",
+      "title": { "ru": "Поступил в NamDTU", "uz": "NamDTU ga o‘qishga kirdim" },
+      "org": {
+        "ru": "Наманганский государственный технический университет",
+        "uz": "Namangan davlat texnika universiteti"
+      },
+      "desc": {
+        "ru": "Направление «Информационные системы и технологии». Первые шаги в C++, алгоритмах и вебе.",
+        "uz": "«Axborot tizimlari va texnologiyalari». C++, algoritmlar va vebga birinchi qadamlar."
+      }
+    },
+    {
+      "id": "t-2023",
+      "year": "2023",
+      "title": { "ru": "Первые заказы и сайты", "uz": "Birinchi buyurtmalar va saytlar" },
+      "org": { "ru": "Фриланс и учёба", "uz": "Frilans va o‘qish" },
+      "desc": {
+        "ru": "Свёрстан первый лендинг, освоил React и базовый бэкенд. Понял, что люблю собирать целые продукты.",
+        "uz": "Birinchi landing yig‘ildi, React va asosiy backend o‘zlashtirildi. Butun mahsulotlarni yig‘ishni yaxshi ko‘rishim aniqlandi."
+      }
+    },
+    {
+      "id": "t-2024",
+      "year": "2024",
+      "title": { "ru": "AURUM MOTORS — сайт автосалона", "uz": "AURUM MOTORS — avtosalon sayti" },
+      "org": { "ru": "Коммерческий проект", "uz": "Tijorat loyihasi" },
+      "desc": {
+        "ru": "Каталог авто, сравнение комплектаций, адаптив. Первый серьёзный заказ с реальными пользователями.",
+        "uz": "Avto katalogi, komplektatsiyalar taqqoslash, adaptiv. Haqiqiy foydalanuvchili birinchi jiddiy buyurtma."
+      }
+    },
+    {
+      "id": "t-2025",
+      "year": "2025",
+      "title": { "ru": "LifeRPG — исекай-приложение", "uz": "LifeRPG — isekai ilovasi" },
+      "org": { "ru": "Собственный проект", "uz": "Shaxsiy loyiha" },
+      "desc": {
+        "ru": "Геймификация жизни в стилистике аниме-попаданца: квесты, навыки, прокачка. Собрано полностью вручную.",
+        "uz": "Hayotni anime-isekai uslubida o‘yinlashtirish: kvastlar, ko‘nikmalar, proshechka. To‘liq qo‘lda yig‘ilgan."
+      }
+    },
+    {
+      "id": "t-2026",
+      "year": "2026",
+      "title": { "ru": "Выпускной курс", "uz": "Bitiruv kursi" },
+      "org": { "ru": "NamDTU", "uz": "NamDTU" },
+      "desc": {
+        "ru": "Диплом и первые шаги в продакшен-команду. Открыт к стажировкам и заказам.",
+        "uz": "Diplom va birinchi production-jamoa qadamları. Stajirovka va buyurtmalarga ochiqman."
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "id": "r-1",
+      "name": "А. Т. Каримов",
+      "role": { "ru": "Преподаватель информатики, NamDTU", "uz": "Informatika o‘qituvchisi, NamDTU" },
+      "text": {
+        "ru": "Равшан выделяется среди студентов: он не просто сдаёт лабы, а доводит проекты до рабочего результата. Редкая для учёбы ответственность.",
+        "uz": "Ravshan talabalar orasida ajralib turadi: u shunchaki lablarni topshirmaydi, balki loyihalarni ishlovchi natijagacha yetkazadi. O‘qish uchun kamdan-kam uchraydigan mas'uliyat."
+      }
+    },
+    {
+      "id": "r-2",
+      "name": "Дирекция AURUM MOTORS",
+      "role": { "ru": "Заказчик сайта", "uz": "Sayt buyurtmachisi" },
+      "text": {
+        "ru": "Сайт получился быстрым и аккуратным. Равшан сам предлагал решения, а не просто «делал как сказали». Будем обращаться ещё.",
+        "uz": "Sayt tez va chiroyli chiqdi. Ravshan shunchaki «aytilgancha qilmadi», balki o‘zi yechim taklif qildi. Yana murojaat qilamiz."
+      }
+    },
+    {
+      "id": "r-3",
+      "name": "М. Ахмедов",
+      "role": { "ru": "Сокурсник и соавтор", "uz": "Kursdosh va hammuallif" },
+      "text": {
+        "ru": "В командной работе Равшан — тот, кто тащит. Код чистый, дедлайны держит, по пятницам не пропадает.",
+        "uz": "Jamoa ishida Ravshan — sudrab boruvchi odam. Kod toza, muddatlarni ushlaydi, jumalardan g‘oyib bo‘lmaydi."
+      }
+    }
+  ]
+}
