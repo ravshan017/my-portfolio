@@ -11,6 +11,7 @@ import {
   deleteBlogPost,
   readLocales,
   writeLocales,
+  isGithubBacked,
 } from "@/lib/admin-store";
 
 export const runtime = "nodejs";
@@ -32,7 +33,14 @@ export async function GET(req: NextRequest) {
     readBlog(),
     readLocales(),
   ]);
-  return NextResponse.json({ site, projects, experience, blog, locales });
+  return NextResponse.json({
+    site,
+    projects,
+    experience,
+    blog,
+    locales,
+    meta: { githubBacked: isGithubBacked },
+  });
 }
 
 export async function PUT(req: NextRequest) {

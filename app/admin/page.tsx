@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [pw, setPw] = useState("");
   const [content, setContent] = useState<Content | null>(null);
+  const [meta, setMeta] = useState<any>(null);
   const [tab, setTab] = useState("site");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,6 +20,7 @@ export default function AdminPage() {
     if (me.authed) {
       const data = await fetch("/api/admin/content").then((r) => r.json());
       setContent(data);
+      setMeta(data.meta);
     }
   }, []);
 
@@ -54,8 +56,12 @@ export default function AdminPage() {
     });
     setBusy(false);
     if (res.ok) {
-      setMsg("Сохранено ✓");
-      load();
+      if (meta?.githubBacked) {
+        setMsg("Сохранено в GitHub ✓ Сайт обновится за ~1–2 мин.");
+      } else {
+        setMsg("Сохранено ✓");
+        load();
+      }
     } else {
       const j = await res.json().catch(() => ({}));
       setMsg("Ошибка: " + (j.error || res.status));
@@ -131,6 +137,14 @@ export default function AdminPage() {
       </div>
 
       {msg && <p className="mb-4 font-mono text-xs text-sakura-bright">{msg}</p>}
+
+      {meta?.githubBacked && (
+        <p className="mb-4 rounded border border-sora/40 bg-panel/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted">
+          Правки сохраняются в GitHub и применяются на сайте автоматически
+          после пересборки (обычно ~1–2 минуты). Обнови страницу позже, чтобы
+          увидеть изменения.
+        </p>
+      )}
 
       {tab === "site" && (
         <SiteEditor content={content} setContent={setContent} save={save} busy={busy} />
